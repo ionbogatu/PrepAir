@@ -1,0 +1,20 @@
+#loginform{
+	width: 240px;
+	margin: 120px auto; /* margin: verticala; */
+}
+#username_field,#password_field{
+	background: #333;
+	color: white;
+	font-weight: bold;
+	font-style: italic;
+	font-family: "Comic Sans";
+	height: 20px;
+	border: 10px solid red;
+	border-radius: 25px;
+	font-size: 18px;
+	text-indent: 5px;
+}
+body{
+	background: #ccc;
+
+}
