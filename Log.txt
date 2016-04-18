@@ -1,0 +1,1 @@
+[16-04-2016 20:12:00 - 16-04-2016 21:15:00] - Cozma Laurentiu - Modificarea paginii principale index.html - crearea meniului si divizarea paginii in sectiuni, adaugarea foii de stiluri style.css si a fontului Lobster
