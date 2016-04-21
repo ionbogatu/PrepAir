@@ -15,7 +15,7 @@
             @if(Auth::user())
             <li><a href="/profile">Profile</a></li>
             @endif
-            <li><a href="/resources">Routes</a></li>
+            <li><a href="/flights">Flights</a></li>
             <li><a href="/icalendar">iCalendar</a></li>
             <li><a href="/api">Api</a></li>
             <li><a href="/statistics">Statistics</a></li>
