@@ -8,6 +8,8 @@
 
 namespace App\Http\Controllers;
 
+use User;
+
 class UserController extends Controller{
 
 }
