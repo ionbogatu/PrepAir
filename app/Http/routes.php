@@ -16,5 +16,6 @@ Route::get('/', function () {
 });
 
 Route::get('/login', 'UserController@login');
+Route::get('/flights', 'UserController@flights');
 
 Route::auth();
