@@ -1,0 +1,41 @@
+.db_import{
+    width: 200px;
+    display: block;
+    background: #f5f5f5;
+    padding: 110px 0;
+    margin: 40px 0 0 120px;
+    box-shadow: 0 0 5px rgba(0,0,0,.4);
+    font-size: 28px;
+    line-height: 1em;
+    text-align: center;
+    transition: background 0.3s ease-in-out, color 0.3s ease-in-out;
+}
+
+.db_import:hover{
+    background: #666;
+    color: white;
+    box-shadow: none;
+    transition: background 0.3s ease-in-out, color 0.3s ease-in-out;
+}
+
+.response_success{
+    width: 80%;
+    margin: 0 auto;
+    margin-top: 30px;
+    background: lightgreen;
+    border: 1px solid limegreen;
+    border-radius: 5px;
+    padding: 10px 15px;
+    color: green;
+}
+
+.response_error{
+    width: 80%;
+    margin: 0 auto;
+    margin-top: 30px;
+    background: rgba(255, 0, 27, 0.44);
+    border: 1px solid #ff212a;
+    border-radius: 5px;
+    padding: 10px 15px;
+    color: rgba(217, 0, 14, 0.79);
+}

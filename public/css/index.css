@@ -119,3 +119,11 @@ footer{
 	text-align: center;
 	color: #aaa;
 }
+
+.stop_hours{
+    float: right;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    width: 65% !important;
+    visibility: visible;
+}
