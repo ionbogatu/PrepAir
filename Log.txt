@@ -1,2 +1,3 @@
 [16-04-2016 20:12:00 - 16-04-2016 21:15:00] - Cozma Laurentiu - Modificarea paginii principale index.html - crearea meniului si divizarea paginii in sectiuni, adaugarea foii de stiluri style.css si a fontului Lobster
 [21-04-2016 07:09:00 - 21-04-2016 11:00:00] - Bogatu Ion - Adaugarea functionalitatii de logare
+[25-04-2016 21:30:00 - 25-04-2016 23:25:00] - Cozma Laurentiu - Creeare frontend pentru paginile Flights si Profile
