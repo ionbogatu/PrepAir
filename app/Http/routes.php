@@ -17,5 +17,13 @@ Route::get('/', function () {
 
 Route::get('/login', 'UserController@login');
 Route::get('/flights', 'UserController@flights');
+Route::get('/profile', 'UserController@profile');
 
 Route::auth();
+
+/* Administration part */
+
+Route::group(['namespace' => 'Admin', 'prefix' => 'admins', 'middleware' => 'admin'], function(){
+    Route::get('/', ['as' => 'admin_index', 'uses' => 'AdminController@index']);
+    Route::get('/db/import', 'AdminController@dbImport');
+});
