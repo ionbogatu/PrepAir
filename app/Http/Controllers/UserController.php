@@ -41,4 +41,8 @@ class UserController extends Controller{
             ->get();
         return view('profile', ['user' => Auth::user(), 'routes' => $routes]);
     }
+
+    public function searchForFlights(){
+        
+    }
 }

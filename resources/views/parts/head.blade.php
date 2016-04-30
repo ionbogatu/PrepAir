@@ -9,3 +9,4 @@
 <link rel="stylesheet" type="text/css" href="/css/index.css">
 <script src="/js/index.js"></script>
 <title>PrepAir - We save your time and money.</title>
+<meta name="csrf-token" content="{{ csrf_token() }}">

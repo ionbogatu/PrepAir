@@ -14,29 +14,27 @@
     <div class="ui container">
         <div class="ui form">
             <h4 class="ui dividing header">Personal information</h4>
-            <div class="field">
-                <div class="three fields">
-                    <div class="field">
-                        <label>Name</label>
-                        <input name="name" placeholder="{{ $user->name }}" type="text">
-                    </div>
+            <div class="three fields">
+                <div class="field">
+                    <label>Name</label>
+                    <input name="name" placeholder="{{ $user->name }}" type="text">
                 </div>
-                <br/>
-                <div class="three fields">
-                    <div class="field">
-                        <label>Password</label>
-                        <input name="password" value="password" type="password">
-                    </div>
-                    <div class="field">
-                        <label>Confirm password</label>
-                        <input name="password" placeholder="Confirm password" type="password">
-                    </div>
+            </div>
+            <br/>
+            <div class="three fields">
+                <div class="field">
+                    <label>Password</label>
+                    <input name="password" value="password" type="password">
                 </div>
-                <br/>
-                <div class="three fields">
-                    <div class="field">
-                        <input name="submit" class="ui teal button" value="Update profile" type="submit">
-                    </div>
+                <div class="field">
+                    <label>Confirm password</label>
+                    <input name="confirm_password" placeholder="Confirm password" type="password">
+                </div>
+            </div>
+            <br/>
+            <div class="three fields">
+                <div class="field">
+                    <input name="submit" class="ui teal button" value="Update profile" type="submit">
                 </div>
             </div>
         </div>

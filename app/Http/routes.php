@@ -21,6 +21,8 @@ Route::get('/profile', 'UserController@profile');
 
 Route::auth();
 
+Route::post('/flights', 'UserController@searchForFlights');
+
 /* Administration part */
 
 Route::group(['namespace' => 'Admin', 'prefix' => 'admins', 'middleware' => 'admin'], function(){

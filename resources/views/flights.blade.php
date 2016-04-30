@@ -3,62 +3,60 @@
 <div class="ui container">
     <br/>
     <br/>
-    <div class="ui form">
+    {!! Form::open(array('url' => 'flights', 'class' => 'ui form')) !!}
         <h4 class="ui dividing header">Search Information</h4>
-        <div class="field">
-            <div class="three fields">
-                <div class="field">
-                    <label>Source</label>
-                    <input name="source" placeholder="Source airport" type="text">
-                </div>
-                <div class="field">
-                    <label>Destination</label>
-                    <input name="destination" placeholder="Destination airport" type="text">
-                </div>
-                <div class="field">
-                    <label>Airline</label>
-                    <select class="ui dropdown" name="airline">
-                        <option selected>Any</option>
-                        @foreach ($airlines as $airline)
-                            <option>{{ $airline->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
+        <div class="three fields">
+            <div class="field">
+                {{ Form::label('source', 'Source') }}
+                {{ Form::text('source', '', array('placeholder' => 'Source airport')) }}
+            </div>
+            <div class="field">
+                {{ Form::label('destination', 'Destination') }}
+                {{ Form::text('destination', '', array('placeholder' => 'Destination airport')) }}
+            </div>
+            <div class="field">
+                {{ Form::label('', 'Airline') }}
+                <select class="ui dropdown" name="airline">
+                    <option selected>Any</option>
+                    @foreach ($airlines as $airline)
+                        <option value="{{ $airline->id }}">{{ $airline->name }}</option>
+                    @endforeach
+                </select>
             </div>
         </div>
         <div class="three fields">
             <div class="field">
                 <div class="ui segment">
                     <div class="ui toggle checkbox">
-                        <input class="hidden" tabindex="0" name="night_flights" type="checkbox">
-                        <label>Night flight</label>
+                        {{ Form::checkbox('night_flights', '', false, array('class' => 'hidden', 'tabindex' => 0)) }}
+                        {{ Form::label('night_flight', 'Night flight') }}
                     </div>
                 </div>
             </div>
             <div class="field">
                 <div class="ui segment">
                     <div class="ui toggle checkbox">
-                        <input class="hidden" tabindex="0" name="relaxed_route" type="checkbox">
-                        <label>The most relaxed route</label>
+                        {{ Form::checkbox('relaxed_route', '', false, array('class' => 'hidden', 'tabindex' => 0)) }}
+                        {{ Form::label('relaxed_route', 'The most relaxed route') }}
                     </div>
                 </div>
             </div>
             <div class="field">
                 <div class="ui segment">
                     <div class="ui toggle checkbox checked">
-                        <input class="hidden" tabindex="0" name="stops" type="checkbox">
-                        <label id="stops">Stops</label>
+                        {{ Form::checkbox('stops', '', true, array('class' => 'hidden', 'tabindex' => 0)) }}
+                        {{ Form::label('stops', 'Stops', array('id' => 'stops')) }}
                     </div>
-                    <select class="stop_hours">
+                    <select name="stop_count" class="stop_count">
                         <option selected>Any</option>
-                        @for ($i = 0; $i <= 24; $i++)
+                        @for ($i = 0; $i <= 3; $i++)
                             <option>{{ $i }}</option>
                         @endfor
                     </select>
                 </div>
             </div>
         </div>
-        <div class="ui teal button" tabindex="0">Search for routes</div>
-    </div>
+        <div class="ui teal button submit" tabindex="0">Search for flights</div>
+    {!! Form::close() !!}
 </div>
 @endsection
