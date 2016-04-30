@@ -120,10 +120,10 @@ footer{
 	color: #aaa;
 }
 
-.stop_hours{
+.stop_count{
     float: right;
     padding-top: 0 !important;
     padding-bottom: 0 !important;
-    width: 65% !important;
+    width: 55% !important;
     visibility: visible;
 }
