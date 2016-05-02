@@ -10,6 +10,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Http\Request;
 use App\User;
 
 class UserController extends Controller{
@@ -42,7 +43,35 @@ class UserController extends Controller{
         return view('profile', ['user' => Auth::user(), 'routes' => $routes]);
     }
 
-    public function searchForFlights(){
+    public function searchForFlights(Request $request){
+        $this->validate($request, [
+            'source' => 'required',
+            'destination' => 'required'
+        ]);
 
+        echo json_encode($_POST);
+    }
+
+    public function loadAirportsList(){
+        $query = $_POST['query'];
+        if(strlen($query) == 3){
+            $response = DB::table('airports')
+                ->where('iata_faa', 'like', strtoupper($query) . '%')
+                ->take(9)
+                ->orderBy('iata_faa', 'desc')
+                ->get();
+        }else if(strlen($query) > 0 && strlen($query) != 3){
+            $response = DB::table('airports')
+                ->where('name', 'like', ucfirst(strtolower($query)) . '%')
+                ->take(9)
+                ->orderBy('name', 'desc')
+                ->get();
+        }
+
+        if(isset($response)){
+            echo json_encode($response);
+        }else{
+            echo json_encode(null);
+        }
     }
 }

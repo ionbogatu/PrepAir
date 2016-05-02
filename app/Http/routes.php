@@ -22,6 +22,7 @@ Route::get('/profile', 'UserController@profile');
 Route::auth();
 
 Route::post('/flights', 'UserController@searchForFlights');
+Route::post('/loadAirportsList', 'UserController@loadAirportsList');
 
 /* Administration part */
 
