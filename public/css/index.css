@@ -124,6 +124,54 @@ footer{
     float: right;
     padding-top: 0 !important;
     padding-bottom: 0 !important;
-    width: 55% !important;
+    width: 40% !important;
     visibility: visible;
+}
+
+.field-wrapper{
+    position: relative;
+    width: 100%;
+    z-index: 20;
+}
+
+.available-options{
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    position: absolute;
+    width: 100%;
+    visibility: hidden;
+}
+
+.available-options li{
+    background: #fff;
+    height: auto;
+    border: 1px solid rgba(34,36,38,.15);
+    border-top: none;
+    cursor: pointer;
+    color: rgba(0,0,0,.95);
+    padding: .71428571rem 1.14285714rem;
+    transition: height 0.1s ease-in-out;
+}
+
+.available-options li:last-child{
+    border-radius: 0 0 .28571429rem .28571429rem;
+}
+
+.field-error{
+    border: 1px solid rgba(255, 0, 0, 0.5) !important;
+    background: rgba(255,0,0,.05) !important;
+}
+
+.checkboxes > .field > label, .prefered-days > .field > label{
+    font-weight: normal !important;
+    margin-bottom: 0 !important;
+}
+
+.checkboxes .segment, .prefered-days .segment{
+    margin-top: 0 !important;
+}
+
+.prefered-days .checkbox{
+    margin-right: 20px;
 }

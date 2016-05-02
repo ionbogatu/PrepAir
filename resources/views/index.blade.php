@@ -21,5 +21,4 @@
         </li>
     </ul>
 </div>
-<div class="footer-divider"></div>
 @endsection
