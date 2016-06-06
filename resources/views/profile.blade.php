@@ -40,7 +40,13 @@
         </div>
         <br/>
         <br/>
-        <h4 class="ui dividing header">Added Routes</h4>
+        <h4 class="ui dividing header">Administrate preferences</h4>
+        <div class="preferences"></div>
+        <a href="#" class="add-new add-preference">+Add new</a>
+        <br/>
+        <input name="submit" class="ui teal button" value="Save" type="submit">
+        <div class="ui yellow message preference-message"></div>
+        <!--h4 class="ui dividing header">Added Routes</h4>
         <a href="#" class="add-new add-route">+Add new</a>
         <table class="ui selectable inverted table">
             <thead>
@@ -106,21 +112,6 @@
                     </tr>
                 @endforeach
             @endif
-            <!--tr>
-                <td>John</td>
-                <td>Approved</td>
-                <td class="right aligned">None</td>
-            </tr>
-            <tr>
-                <td>Jamie</td>
-                <td>Approved</td>
-                <td class="right aligned">Requires call</td>
-            </tr>
-            <tr>
-                <td>Jill</td>
-                <td>Denied</td>
-                <td class="right aligned">None</td>
-            </tr-->
             </tbody>
         </table>
         <br/>
@@ -182,6 +173,6 @@
                 <td class="right aligned">None</td>
             </tr>
             </tbody>
-        </table>
+        </table-->
     </div>
 @endsection

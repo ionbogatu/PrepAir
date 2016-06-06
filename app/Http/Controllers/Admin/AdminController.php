@@ -19,6 +19,8 @@ class AdminController extends Controller{
         return view('admin.index');
     }
 
+    // --------------------------------
+
     private function importFiles(){
         $content = fopen('https://raw.githubusercontent.com/jpatokal/openflights/master/data/airports.dat', 'rb');
         Storage::disk('local')->put('airports.csv', $content);
@@ -282,5 +284,9 @@ class AdminController extends Controller{
 
         return redirect()->route('admin_index')->with('response', 'The database was refactored successfully')->with('response_type', 'success');
     }
+
+    // --------------------------------
+
+    
 
 }

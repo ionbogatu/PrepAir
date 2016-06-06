@@ -5,8 +5,10 @@
 <script src="/semantic/dist/semantic.js"></script>
 <!-- Fonts -->
 <link href='https://fonts.googleapis.com/css?family=Lobster' rel='stylesheet' type='text/css'>
+<link href='/css/font-awesome.min.css' rel='stylesheet' type='text/css'>
 <!-- Local resources -->
 <link rel="stylesheet" type="text/css" href="/css/index.css">
 <script src="/js/index.js"></script>
+<script src="/js/preference-manager.js"></script>
 <title>PrepAir - We save your time and money.</title>
 <meta name="csrf-token" content="{{ csrf_token() }}">

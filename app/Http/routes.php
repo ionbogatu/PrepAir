@@ -23,10 +23,17 @@ Route::auth();
 
 Route::post('/flights', 'UserController@searchForFlights');
 Route::post('/loadAirportsList', 'UserController@loadAirportsList');
+Route::post('/loadAllAirportsList', 'UserController@loadAllAirportsList');
+Route::post('/deletePreference', 'UserController@deletePreference');
 
 /* Administration part */
 
 Route::group(['namespace' => 'Admin', 'prefix' => 'admins', 'middleware' => 'admin'], function(){
     Route::get('/', ['as' => 'admin_index', 'uses' => 'AdminController@index']);
     Route::get('/db/import', 'AdminController@dbImport');
+    Route::get('/event/create', 'AdminController@createEvent');
 });
+
+/* Testing */
+
+Route::get('/test/weather', 'TestController@testWeather');

@@ -7,45 +7,45 @@ $(document).ready(function(){
     function loadAirportsList(field, type){
         field.removeClass('field-error');
         var searchQuery = field.val();
-         $.ajax({
+        $.ajax({
             'url': '/loadAirportsList',
             'data': {'query': searchQuery},
-            'headers': { 'X-CSRF-Token' : $('meta[name=csrf-token]').attr('content') },
+            'headers': {'X-CSRF-Token': $('meta[name=csrf-token]').attr('content')},
             'method': 'post'
-        }).done(function(data){
+        }).done(function (data) {
             var json = $.parseJSON(data);
             var htmlResponse = '';
-            if(data !== '[]'){
-                $.each(json, function(index, value){
+            if (data !== '[]') {
+                $.each(json, function (index, value) {
                     var iata_faa;
-                    if(value.iata_faa === undefined){
+                    if (value.iata_faa === undefined) {
                         iata_faa = '***';
-                    }else{
+                    } else {
                         iata_faa = value.iata_faa;
                     }
-                    htmlResponse += '<li id="' + value.id + '">' + value.name + ', ' + value.country + '(' + iata_faa +  ')</li>';
+                    htmlResponse += '<li id="' + value.id + '">' + value.name + ', ' + value.country + '(' + iata_faa + ')</li>';
                 });
-                if(type === 'source'){
+                if (type === 'source') {
                     $('.source .available-options').html(htmlResponse).css({'visibility': 'visible'});
-                }else if(type === 'destination'){
+                } else if (type === 'destination') {
                     $('.destination .available-options').html(htmlResponse).css({'visibility': 'visible'});
                 }
-            }else{
-                if(type === 'source'){
+            } else {
+                if (type === 'source') {
                     $('.source .available-options').html('').css({'visibility': 'hidden'});
-                }else if(type === 'destination'){
+                } else if (type === 'destination') {
                     $('.destination .available-options').html('').css({'visibility': 'hidden'});
                 }
             }
 
-            $('.source .available-options li').click(function(){
+            $('.source .available-options li').click(function () {
                 var value = $(this).text();
                 var route_id = $(this).attr('id');
                 $('#source').attr('alt', route_id).val(value);
                 $('.source .available-options').html('').css({'visibility': 'hidden'});
             });
 
-            $('.destination .available-options li').click(function(){
+            $('.destination .available-options li').click(function () {
                 var value = $(this).text();
                 var route_id = $(this).attr('id');
                 $('#destination').attr('alt', route_id).val(value);
@@ -66,6 +66,14 @@ $(document).ready(function(){
         }
     });
 
+    $('#source, #destination').on('blur', function(){
+        if($(this).val() === ''){
+            $(this).addClass('field-error');
+        }else{
+            $(this).removeClass('field-error');
+        }
+    });
+
     $('#source').on('input', function(){
         loadAirportsList($(this), 'source');
     });
@@ -75,6 +83,14 @@ $(document).ready(function(){
 
     $('.submit').click(function(event){
         $(this).addClass('loading');
+        var days = [];
+        var d = $('.prefered-days input');
+        var counter = 0;
+        $.each(d, function(index, value){
+            days[counter] = {name: value.name, value: value.checked};
+            counter++;
+        });
+
         $.ajax({
             'url': '/flights',
             'dataType': 'json',
@@ -82,6 +98,8 @@ $(document).ready(function(){
                 'source': $('input[name=source]').attr('alt'),
                 'destination': $('input[name=destination]').attr('alt'),
                 'airline': $('select[name=airline]').val(),
+                'date': $('input[name=departure-date]').val(),
+                'days': days,
                 'night_flight': $('input[name=night_flight]').parent().hasClass('checked') ? true : false,
                 'relaxed_route': $('input[name=relaxed_route]').parent().hasClass('checked') ? true : false,
                 'stops': $('input[name=stops]').parent().hasClass('checked') ? true : false,
@@ -90,22 +108,28 @@ $(document).ready(function(){
             'method' : 'post',
             'headers': { 'X-CSRF-Token' : $('meta[name=csrf-token]').attr('content') },
             'success': function(data){
-                $('.submit').removeClass('loading');
                 console.log(data);
-            },
-            'error': function(data){
-                $('.submit').removeClass('loading');
-                var errors = $.parseJSON(data.responseText);
-
-                $.each(errors, function(index, value){
-                    console.log(index);
-                    console.log(value[0]);
-                    if(index === 'source'){
-                        $('#source').addClass('field-error').attr('placeholder', value[0]);
-                    }else if(index === 'destination'){
-                        $('#destination').addClass('field-error').attr('placeholder', value[0]);
+                if(data.success == 0){
+                    if($('#source').val() == ''){
+                        $('#source').addClass('field-error');
                     }
-                });
+                    if($('#destination').val() == ''){
+                        $('#destination').addClass('field-error');
+                    }
+                }else if(data.success == 1){
+                    $('#departure-date').addClass('field-error');
+                    $('.prefered-days > .segment').addClass('field-error');
+                }else{
+                    $('#source').removeClass('field-error');
+                    $('#destination').removeClass('field-error');
+                    $('#departure-date').removeClass('field-error');
+                    $('.prefered-days > .segment').removeClass('field-error');
+
+                    // append results
+
+                    $('.results').html(data);
+                }
+                $('.submit').removeClass('loading');
             }
         });
     });

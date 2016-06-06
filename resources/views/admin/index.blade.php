@@ -12,5 +12,6 @@
         {{ session('response') }}
     </h3>
     @endif
-    <a class="db_import" href="/admins/db/import">Database import</a>
+    <a class="action db_import" href="/admins/db/import">Database import</a>
+    <a class="action event_create" href="/admins/event/create">Create<br/>event</a>
 @endsection
