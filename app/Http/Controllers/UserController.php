@@ -11,9 +11,27 @@ namespace App\Http\Controllers;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
+use Monolog\Logger as Log;
+use GuzzleHttp\Client;
 use App\User;
 
 class UserController extends Controller{
+
+    private $logObj = '';
+
+    /**
+     *
+     */
+
+    public function __construct(){
+        if(empty($this->logObj)){
+            $this->logObj = new Log('app');
+        }
+    }
+
+    /**
+     * @return \Illuminate\Contracts\View\Factory|\Illuminate\View\View
+     */
 
     public function flights(){
         $airlines = DB::table('airlines')
@@ -21,6 +39,10 @@ class UserController extends Controller{
             ->get();
         return view('flights', ['airlines' => $airlines]);
     }
+
+    /**
+     * @return \Illuminate\Contracts\View\Factory|\Illuminate\View\View
+     */
 
     public function profile(){
         $routes = DB::table('routes')
@@ -43,26 +65,774 @@ class UserController extends Controller{
         return view('profile', ['user' => Auth::user(), 'routes' => $routes]);
     }
 
-    public function searchForFlights(Request $request){
-        $this->validate($request, [
-            'source' => 'required',
-            'destination' => 'required'
-        ]);
+    /**
+     * Returns an array with flights and a status code
+     *
+     * @param $source_airport_id - id of the source airport
+     * @param $destination_airport_id - id of the destination airport
+     * @param $airline_id - id of the airline that has the flight
+     *
+     * @return array - An array with flights
+     */
 
-        echo json_encode($_POST);
+    protected function getResults($source_airport_id, $destination_airport_id, $airline_id){
+        $result = null;
+        if(!empty($airline_id)) {
+            $result = DB::table('routes')
+                ->where('source_airport_id', $source_airport_id)
+                ->where('destination_airport_id', $destination_airport_id)
+                ->where('airline_id', $airline_id)
+                ->get();
+            if(!empty($result)) {
+                return ['result' => $result, 'statusCode' => 1];
+            }
+        }else if(empty($airline_id)){
+            $result = DB::table('routes')
+                ->where('source_airport_id', $source_airport_id)
+                ->where('destination_airport_id', $destination_airport_id)
+                ->get();
+            if(!empty($result)){
+                return ['result' => $result, 'statusCode' => 1];
+            }
+        }
+
+        $result = DB::table('routes')
+            ->where('source_airport_id', $source_airport_id)
+            ->where('destination_airport_id', $destination_airport_id)
+            ->get();
+        if(!empty($result)){
+            return ['result' => $result, 'statusCode' => 2];
+        }else{
+            return ['result' => null, 'statusCode' => 3];
+        }
     }
+
+    /**
+     *  Verify if there are flights for user's available days
+     *
+     * @param array $results - Array with flights
+     * @param array $available_days - User's available days
+     * @param int $statusCode - The status code from previous selection
+     *
+     * @return array $response - filtered results
+     */
+
+    protected function checkDate($results, $available_days, $statusCode){
+        $response = array();
+        foreach($results as $result){
+            $flight_days = json_decode($result->days);
+            foreach($available_days as $day){
+                if(
+                    in_array($day, $flight_days)
+                ){
+                    $response[$result->id] = $result;
+                }
+            }
+            unset($day);
+        }
+        unset($result);
+
+        if(!empty($response)) {
+            $newStatusCode = $statusCode * 10 + 1;
+            return ['result' => $response, 'statusCode' => $newStatusCode];
+        }else{
+            $newStatusCode = $statusCode * 10 + 2;
+            return ['result' => $results, 'statusCode' => $newStatusCode];
+        }
+    }
+
+    /**
+     * @param $request - HTTP Request
+     * @param $results - array of flights
+     * @param $statusCode - status code from previous filter
+     *
+     * @return array $response - filtered array of flights
+     */
+
+    protected function matchRouteParams($request, $results, $statusCode){
+        $response = array();
+
+        // filter by night_flight
+        if(
+            $request->night_flight === 'true'
+        ){
+            foreach($results as $result){
+                $source_airport = DB::table('airports')
+                    ->where('id', $result->source_airport_id)
+                    ->first();
+                $destination_airport = DB::table('airports')
+                    ->where('id', $result->destination_airport_id)
+                    ->first();
+                $sun_rise = date_sunrise(strtotime($result->arrival_time), SUNFUNCS_RET_TIMESTAMP, $destination_airport->latitude, $destination_airport->longitude, $destination_airport->timezone);
+                $sun_set = date_sunset(strtotime($result->departure_time), SUNFUNCS_RET_TIMESTAMP, $source_airport->latitude, $source_airport->longitude, $source_airport->timezone);
+                if(
+                    strtotime($result->departure_time) > $sun_set &&
+                    strtotime($result->departure_time) < $sun_rise &&
+                    strtotime($result->arrival_time) < $sun_rise &&
+                    strtotime($result->arrival_time) > $sun_set
+                ){
+                    $response[] = $result;
+                }
+            }
+            unset($result);
+
+            if(
+                !empty($response)
+            ){
+                // night flight matches
+                $newStatusCode = $statusCode * 10 + 1;
+            }else{
+                // no flights found
+                $newStatusCode = $statusCode * 10 + 8;
+                $response = $results;
+            }
+        } else if(
+            $request->night_flight === 'false'
+        ) {
+            // night flight is optional
+            $newStatusCode = $statusCode * 10 + 1;
+            $response = $results;
+        }
+
+        $tmp_response = $response;
+        unset($response);
+        $response = array();
+
+        // filter by relaxed_route
+
+        if(
+            $request->relaxed_route === 'true'
+        ){
+            if(
+                $newStatusCode % 10 == 1
+            ){
+                // there are some responses
+                foreach($tmp_response as $result){
+                    if(
+                        $result->relaxed_note == 5
+                    ){
+                        $response[] = $result;
+                    }
+                }
+                unset($result);
+
+                if(
+                    !empty($response)
+                ) {
+                    $newStatusCode = intval($newStatusCode / 10);
+                    $newStatusCode = $newStatusCode * 10 + 1;
+                }else{
+                    // return the flights founded at previous step
+                    $newStatusCode = intval($newStatusCode / 10);
+                    $newStatusCode = $newStatusCode * 10 + 5;
+                    $response = $tmp_response;
+                }
+            }else if(
+                $newStatusCode % 10 == 8
+            ){
+                // no night flights, search by relaxed route
+                foreach($tmp_response as $result){
+                    if(
+                        $result->relaxed_note == 5
+                    ){
+                        $response[] = $result;
+                    }
+                }
+                unset($result);
+
+                if(
+                    !empty($response)
+                ) {
+                    $newStatusCode = intval($newStatusCode / 10);
+                    $newStatusCode = $newStatusCode * 10 + 6;
+                }else{
+                    $newStatusCode = intval($newStatusCode / 10);
+                    $newStatusCode = $newStatusCode * 10 + 8;
+                    $response = $tmp_response;
+                }
+            }
+        }
+        else if(
+            $request->relaxed_route === 'false'
+        ){
+            // relaxed_route is optional
+            if(
+                $newStatusCode % 10 == 1
+            ){
+                $newStatusCode = intval($newStatusCode / 10);
+                $newStatusCode = $newStatusCode * 10 + 2;
+                $response = $tmp_response;
+            }else
+            if(
+                $newStatusCode % 10 == 8
+            ){
+                $newStatusCode = intval($newStatusCode / 10);
+                $newStatusCode = $newStatusCode * 10 + 6;
+                $response = $tmp_response;
+            }
+        }
+
+        $tmp_response = $response;
+        unset($response);
+        $response = array();
+
+        // filter by stops
+
+        if(
+            $request->stops === 'true'
+        ){
+            // 1, 2, or 3 stops
+            $stop_count = $request->stop_count;
+            if($stop_count !== '0'){
+                // specific number of stops
+                foreach($tmp_response as $result){
+                    if(
+                        $result->stops == intval($stop_count)
+                    ){
+                        $response[] = $result;
+                    }
+                }
+                unset($result);
+
+                if(
+                    !empty($response)
+                ){
+                    // possible statusCodes = 1, 2, 5, 6, 8
+
+                    if(
+                        $newStatusCode % 10 == 2
+                    ){
+                        $newStatusCode = intval($newStatusCode / 10);
+                        $newStatusCode = $newStatusCode * 10 + 1;
+                    }else if(
+                        $newStatusCode % 10 == 5
+                    ){
+                        $newStatusCode = intval($newStatusCode / 10);
+                        $newStatusCode = $newStatusCode * 10 + 3;
+                    }else if(
+                        $newStatusCode % 10 == 6
+                    ){
+                        $newStatusCode = intval($newStatusCode / 10);
+                        $newStatusCode = $newStatusCode * 10 + 4;
+                    }else if(
+                        $newStatusCode % 10 == 8
+                    ){
+                        $newStatusCode = intval($newStatusCode / 10);
+                        $newStatusCode = $newStatusCode * 10 + 7;
+                    }
+                }else{
+                    // no results
+                    // possible statusCodes = 1, 2, 5, 6, 8
+                    // $response = $tmp_response;
+                    if(
+                        $newStatusCode % 10 == 1
+                    ){
+                        $newStatusCode = intval($newStatusCode / 10);
+                        $newStatusCode = $newStatusCode * 10 + 2;
+                    }
+                    $response = $tmp_response;
+                }
+            }else if(
+                $stop_count === '0'
+            ){
+                // any number of stops
+                // possible statusCodes 1, 2, 5, 6, 8
+
+                if(
+                    $newStatusCode % 10 == 2
+                ){
+                    $newStatusCode = intval($newStatusCode / 10);
+                    $newStatusCode = $newStatusCode * 10 + 1;
+                }else if(
+                    $newStatusCode % 10 == 5
+                ){
+                    $newStatusCode = intval($newStatusCode / 10);
+                    $newStatusCode = $newStatusCode * 10 + 3;
+                }else if(
+                    $newStatusCode % 10 == 6
+                ){
+                    $newStatusCode = intval($newStatusCode / 10);
+                    $newStatusCode = $newStatusCode * 10 + 4;
+                }else if(
+                    $newStatusCode % 10 == 8
+                ){
+                    $newStatusCode = intval($newStatusCode / 10);
+                    $newStatusCode = $newStatusCode * 10 + 7;
+                }
+                $response = $tmp_response;
+            }
+        }
+        else if(
+            $request->stops === 'false'
+        ){
+            // with 0 stops
+
+            foreach($tmp_response as $result){
+                if(
+                    $result->stops == 0
+                ){
+                    $response[] = $result;
+                }
+            }
+            unset($result);
+
+            //return array('result' => $response, 'statusCode' => $newStatusCode);
+
+            if(
+                !empty($response)
+            ){
+                // possible statusCodes = 1, 2, 5, 6, 8
+                if(
+                    $newStatusCode % 10 == 2
+                ){
+                    $newStatusCode = intval($newStatusCode / 10);
+                    $newStatusCode = $newStatusCode * 10 + 1;
+                }else if(
+                    $newStatusCode % 10 == 5
+                ){
+                    $newStatusCode = intval($newStatusCode / 10);
+                    $newStatusCode = $newStatusCode * 10 + 3;
+                }else if(
+                    $newStatusCode % 10 == 6
+                ){
+                    $newStatusCode = intval($newStatusCode / 10);
+                    $newStatusCode = $newStatusCode * 10 + 4;
+                }else if(
+                    $newStatusCode % 10 == 8
+                ){
+                    $newStatusCode = intval($newStatusCode / 10);
+                    $newStatusCode = $newStatusCode * 10 + 7;
+                }
+            }else{
+                // no flights with 0 stops
+                if(
+                    $newStatusCode % 10 == 1
+                ){
+                    $newStatusCode = intval($newStatusCode / 10);
+                    $newStatusCode = $newStatusCode * 10 + 2;
+                }
+                $response = $tmp_response;
+            }
+        }
+
+        return ['result' => $response, 'statusCode' => $newStatusCode];
+    }
+
+    /**
+     * Return hot offers added by administrator according to request params
+     *
+     * @param object $request - HTTP Request
+     * @return array - flights with offers
+     */
+
+    protected function getHotOffers(){
+        $offers = DB::select('select routes.*, offers.discount from offers join routes on offers.route_id = routes.id where start_time < NOW() and end_time > NOW() limit 0, 10 ');
+
+        if(
+            !empty($offers)
+        ){
+            return ['result' => $offers, 'statusCode' => 4];
+        }else{
+            return ['result' => null, 'statusCode' => 3];
+        }
+    }
+
+    /**
+     * Select flights from DB that are the mot searched by the users
+     *
+     * @param $request - HTTPRequest
+     * @param $available_days - User's available days
+     * @return array - Flights
+     */
+
+    protected function getMostSearchedFlights($request, $available_days){
+        $flights = DB::select('select distinct routes.* from statistics join routes on routes.id = statistics.route_id group by route_id order by count(routes.id)');
+        if(
+            !empty($flights)
+        ){
+            $result = $this->checkDate($flights, $available_days, 1);
+            if(
+                $result['statusCode'] == '11' ||
+                $result['statusCode'] == '21'
+            ){
+                // results found
+                // filter by type of route (night or any, relaxed or any) and number of stops
+                $result = $this->matchRouteParams($request, $result['result'], $result['statusCode']);
+
+                if(
+                    empty($result['result'])
+                ){
+                    $result = $this->getHotOffers();
+                    return ['result' => $result['result'], 'statusCode' => $result['statusCode']];
+                }
+            }else{
+                // no matches
+                $result = $this->getHotOffers();
+                return ['result' => $result['result'], 'statusCode' => $result['statusCode']];
+            }
+            $result = $this->getHotOffers();
+            return ['result' => $result['result'], 'statusCode' => $result['statusCode']];
+        }
+        $result = $this->getHotOffers();
+        return ['result' => $result['result'], 'statusCode' => $result['statusCode']];
+    }
+
+    protected function getWeather($time, $lat, $lon){
+        $client = new Client(['headers' => ['X-CSRF-Token' => csrf_token()]]);
+        $response = $client->request('GET', 'http://api.openweathermap.org/data/2.5/forecast/daily?lat=' . intval($lat) . '&lon=' . intval($lon) . '&cnt=10&mode=json&appid=30a1509ebfe4eb04e7c3d5db8ed97502');
+
+        $data = json_decode((string)$response->getBody());
+
+        $temps = $data->list;
+
+        $temp = '';
+        $icon = '';
+        $i = 0;
+        while($temps[$i]->dt < $time){
+            $temp = $temps[$i]->temp->day - 273;
+            $icon = $temps[$i]->weather[0]->icon;
+            $description = $temps[$i]->weather[0]->main;
+            $i++;
+        }
+
+        return ['temperature' => $temp, 'icon' => $icon, 'description' => $description];
+    }
+
+    protected function computeHtmlResponse($result){
+        $week_days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+        $source_airport = DB::table('airports')
+            ->where('id', $result->source_airport_id)
+            ->first();
+
+        $destination_airport = DB::table('airports')
+            ->where('id', $result->destination_airport_id)
+            ->first();
+
+        $airline = DB::table('airlines')
+            ->where('id', $result->airline_id)
+            ->first();
+
+        $response = '';
+
+        $relaxed_note = '';
+        for($i = 1; $i <= $result->relaxed_note; $i++){
+            $relaxed_note .= '<i class="fa fa-star" aria-hidden="true"></i>';
+        }
+
+        $days = json_decode($result->days);
+        foreach($days as $day) {
+            if(strtotime($result->departure_time) >= time()) {
+                $departure_date = date('Y-m-d', strtotime($week_days[$day]));
+            }else{
+                $departure_date = date('Y-m-d', strtotime('next ' . $week_days[$day]));
+            }
+
+            if(strtotime($result->arrival_time) >= strtotime($result->departure_time)) {
+                $arrival_date = date('Y-m-d', strtotime($week_days[$day]));
+            }else{
+                $arrival_date = date('Y-m-d', strtotime($week_days[$day]) + 86400); // arrives next day
+            }
+
+            $source_airport_coordinates = DB::table('airports')
+                ->where('id', $result->source_airport_id)
+                ->first(['latitude', 'longitude']);
+
+            $destination_airport_coordinates = DB::table('airports')
+                ->where('id', $result->destination_airport_id)
+                ->first(['latitude', 'longitude']);
+
+            $departure_weather = $this->getWeather(strtotime($departure_date), $source_airport_coordinates->latitude, $source_airport_coordinates->longitude);
+            $arrival_weather = $this->getWeather(strtotime($arrival_date), $destination_airport_coordinates->latitude, $destination_airport_coordinates->longitude);
+
+            $response .= '<div class="result">
+                <div class="departure">
+                    <div class="weather" style="background: url(\'http://openweathermap.org/img/w/' . $departure_weather["icon"] . '.png\') no-repeat 50% 50%">
+                        ' . $departure_weather["temperature"] . ' &#8451;
+                        <br/>
+                        <br/>
+                        <br/>
+                        <br/>
+                        <div style="text-align: center;"><strong style="text-align: center;">' . $departure_weather['description'] . '</strong></div>
+                    </div>
+                    <div class="data">
+                        <h3><strong>Departure: ' . $source_airport->country . ', ' . $source_airport->name . ' (' . $source_airport->iata_faa . ')</strong></h3>
+                        <h4>Departure time: ' . $departure_date . ', ' . $result->departure_time . '</h4>
+                        <br/>
+                        <h6>' . $result->stops . ' stops</h6>
+                        ' . $relaxed_note . '
+                    </div>
+                </div>
+                <div class="arrive">
+                    <div class="weather" style="background: url(\'http://openweathermap.org/img/w/' . $arrival_weather["icon"] . '.png\') no-repeat 50% 50%">
+                        ' . $arrival_weather{"temperature"} . ' &#8451;
+                        <br/>
+                        <br/>
+                        <br/>
+                        <br/>
+                        <div style="text-align: center;"><strong>' . $arrival_weather['description'] . '</strong></div>
+                    </div>
+                    <div class="data">
+                        <h3><strong>Departure: ' . $destination_airport->country . ', ' . $destination_airport->name . ' (' . $destination_airport->iata_faa . ')</strong></h3>
+                        <h4>Departure time: ' . $arrival_date . ', ' . $result->arrival_time . '</h4>
+                        <br/>
+                        <br/>
+                        <div>with: ' . $airline->name . '</div>
+                    </div>
+                </div>
+            </div>';
+        }
+        return $response;
+    }
+
+    protected function prepareHtmlResponse($result){
+        if(
+            !empty($result['result'])
+        ){
+            $response = '';
+            /*if(
+                is_array($result['result'])
+            ){*/
+                // grab the right message for user according to statusCode
+                if(
+                    $result['statusCode'] === 3 ||
+                    $result['statusCode'] === 4 ||
+                    $result['statusCode'] === 12 ||
+                    $result['statusCode'] === 22 ||
+                    $result['statusCode'] === 118 ||
+                    $result['statusCode'] === 218
+                ) {
+                    $response = '<br/><br/>
+                    <div class="ui blue message">
+                        <div class="header">
+                            Sorry, we cannot found any routes for your request
+                        </div>
+                        <br/>
+                        Instead, we\'ve prepared for you some <strong>hot offers</strong>
+                    </div>
+                    <h4 class="ui dividing header teal">Hot offers</h4>';
+                }else if($result['statusCode'] === 111){
+                    $response = '<br/><br/><h4 class="ui dividing header teal">Results</h4>';
+                }else if(
+                    $result['statusCode'] === 211 ||
+                    $result['statusCode'] === 112 ||
+                    $result['statusCode'] === 212 ||
+                    $result['statusCode'] === 113 ||
+                    $result['statusCode'] === 213 ||
+                    $result['statusCode'] === 114 ||
+                    $result['statusCode'] === 214 ||
+                    $result['statusCode'] === 115 ||
+                    $result['statusCode'] === 215 ||
+                    $result['statusCode'] === 116 ||
+                    $result['statusCode'] === 216 ||
+                    $result['statusCode'] === 117 ||
+                    $result['statusCode'] === 217
+                ){
+                    $response = '<br/><br/>
+                    <div class="ui blue message">
+                        <div class="header">
+                        Sorry, we cannot found any routes for your request
+                        </div>
+                        <br/>
+                        But, you can take a look at similar flights
+                    </div>';
+                    $response .= '<h4 class="ui dividing header teal">Suggestions</h4>';
+                }
+
+                foreach($result['result'] as $flight){
+                    $response .= $this->computeHtmlResponse($flight);
+                }
+                unset($result);
+            /*}else if(is_object($result['result'])){
+                // grab the right message for usser according to statusCode
+                if(
+                    $result['statusCode'] === 3 ||
+                    $result['statusCode'] === 4 ||
+                    $result['statusCode'] === 12 ||
+                    $result['statusCode'] === 22 ||
+                    $result['statusCode'] === 118 ||
+                    $result['statusCode'] === 218
+                ) {
+                    $response = '<br/><br/>
+                    <div class="ui yellow message">
+                        <div class="header">
+                            Sorry, we cannot found any routes for your request
+                        </div>
+                        <br/>
+                        Instead, we\'ve prepared for you some <strong>hot offers</strong>
+                    </div>
+                    <h4 class="ui dividing header green result-header-offers">Hot offers</h4>';
+                }else if($result['statusCode'] === 111){
+                    $response = '<h4 class="ui dividing header teal result-header">Results</h4>';
+                }else if(
+                    $result['statusCode'] === 211 ||
+                    $result['statusCode'] === 112 ||
+                    $result['statusCode'] === 212 ||
+                    $result['statusCode'] === 113 ||
+                    $result['statusCode'] === 213 ||
+                    $result['statusCode'] === 114 ||
+                    $result['statusCode'] === 214 ||
+                    $result['statusCode'] === 115 ||
+                    $result['statusCode'] === 215 ||
+                    $result['statusCode'] === 116 ||
+                    $result['statusCode'] === 216 ||
+                    $result['statusCode'] === 117 ||
+                    $result['statusCode'] === 217
+                ){
+                    echo '<div class="ui yellow message">
+                        <div class="header">
+                        Sorry, we cannot found any routes for your request
+                        </div>
+                        <br/>
+                        But, you can take a look at similar flights
+                    </div>';
+                    $response = '<h4 class="ui dividing header yellow result-header-suggestions">Suggestions</h4>';
+                }
+                $response .= $this->computeHtmlResponse($result);
+            }*/
+        }else{
+            $response = 'Sorry, we have no suggestions for you!';
+        }
+        return $response;
+    }
+
+    /**
+     * @param Request $request - The object that contains the HTTP Request information
+     */
+
+    public function searchForFlights(Request $request){
+        $source_airport_id = $request->source;
+        $destination_airport_id = $request->destination;
+        $airline_id = $request->airline;
+        $date = $request->date;
+        $days = $request->days;
+
+        if(
+            empty($source_airport_id) ||
+            empty($destination_airport_id)
+        ){
+            echo json_encode(['success' => 0]);
+            return;
+        }
+
+        // result
+
+        $week_days = ['mon' => 0, 'tue' => 1, 'wed' => 2, 'thu' => 3, 'fri' => 4, 'sat' => 5, 'sun' => 6];
+        $available_days = array();
+
+        if(empty($date)){
+            // check the days
+            foreach($days as $day){
+                if($day['value'] == 'true'){
+                    $available_days[] = $week_days[$day['name']];
+                }
+            }
+            unset($day);
+
+            // check if user's available days are empty
+            if(
+                empty($available_days)
+            ){
+                echo json_encode(['success' => 1]);
+                return;
+            }
+        }else{
+            $available_days[] = (date("w", strtotime($date)) + 6) % 7;
+            foreach($days as $day){
+                if($day['value'] == 'true'){
+                    $available_days[] = $week_days[$day['name']];
+                }
+            }
+            unset($day);
+        }
+
+        $available_days = array_unique($available_days);
+
+        // status code = 1 => found
+        // status code = 2 => found only for source and destination (not airline)
+        // status code = 3 => not found
+        $result = $this->getResults($source_airport_id, $destination_airport_id, $airline_id);
+
+        if(
+            ($result['statusCode'] == 1) ||
+            ($result['statusCode'] == 2)
+        ){
+            // filter flights by date or days parameters
+            $result = $this->checkDate($result['result'], $available_days, $result['statusCode']);
+
+            if(
+                $result['statusCode'] == '11' ||
+                $result['statusCode'] == '21'
+            ){
+                // insert into statistics
+
+                foreach((array)$result['result'] as $flight) {
+                    if (
+                    !DB::table('statistics')
+                        ->insert([
+                            'id' => null,
+                            'user_id' => isset($_SESSION['user']) ? $_SESSION['user']->id : null,
+                            'route_id' => $flight->id,
+                            'search_timestamp' => date('Y-m-d H:i:s', time())
+                        ])
+                    ) {
+                        $this->logObj->error('Insert flight in statistics: Failed');
+                    }
+                }
+                unset($flight);
+
+                // results found
+                // filter by type of route (night or any, relaxed or any) and number of stops
+                $result = $this->matchRouteParams($request, $result['result'], $result['statusCode']);
+
+                if(
+                    empty($result['result'])
+                ){
+                    $result = $this->getMostSearchedFlights($request, $available_days);
+                }else{
+                    foreach((array)$result['result'] as $flight) {
+                        if (
+                            !DB::table('statistics')
+                                ->insert([
+                                    'id' => null,
+                                    'user_id' => isset($_SESSION['user']) ? $_SESSION['user']->id : null,
+                                    'route_id' => $flight->id,
+                                    'search_timestamp' => date('Y-m-d H:i:s', time())
+                                ])
+                        ) {
+                            $this->logObj->error('Insert flight in statistics: Failed');
+                        }
+                    }
+                    unset($flight);
+                }
+            }else{
+                // no matches
+                $result = $this->getMostSearchedFlights($request, $available_days);
+            }
+        }else if($result['statusCode'] == 3){
+            // not found, call getMostSearchedFlights();
+            $result = $this->getMostSearchedFlights($request, $available_days);
+        }
+
+        $result = $this->prepareHtmlResponse($result);
+
+        echo json_encode($result);
+    }
+
+    /**
+     * Echoes a list of airports according to the user's input
+     */
 
     public function loadAirportsList(){
         $query = $_POST['query'];
         if(strlen($query) == 3){
             $response = DB::table('airports')
-                ->where('iata_faa', 'like', strtoupper($query) . '%')
+                ->where('iata_faa', 'like', $query . '%')
                 ->take(9)
                 ->orderBy('iata_faa', 'desc')
                 ->get();
         }else if(strlen($query) > 0 && strlen($query) != 3){
             $response = DB::table('airports')
-                ->where('name', 'like', ucfirst(strtolower($query)) . '%')
+                ->where('name', 'like', $query . '%')
                 ->take(9)
                 ->orderBy('name', 'desc')
                 ->get();
@@ -74,4 +844,33 @@ class UserController extends Controller{
             echo json_encode(null);
         }
     }
+
+    /**
+     * Get the full list of all airports
+     */
+
+    public function loadAllAirportsList(){
+        $airports = DB::table('airports')
+            ->get();
+
+        return !empty($airports) ? json_encode(['response' => $airports]) : json_encode(['response' => '0']);
+    }
+
+    /**
+     * Removes user's selected preference
+     */
+
+    public function deletePreference(){
+        $preference_id = htmlspecialchars(stripslashes($_POST['preference_id']));
+        if(
+            !DB::table('preferences')
+                ->where('id', $preference_id)
+                ->delete()
+        ){
+            echo 1;
+        }else{
+            echo 0;
+        }
+    }
+
 }

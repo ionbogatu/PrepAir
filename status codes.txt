@@ -1,0 +1,24 @@
+Status codes for searching:
+
+-- Search by source, destination and airline
+
+- 1 -> all match - continue
+- 2 -> source + destination matches - continue
+- 3 -> not found
+- 4 -> mostSearchedRoutes()
+
+-- Match days
+
+- 11, 21 -> matches - continue
+- 12, 22 -> not match - mostSearchedRoutes()
+
+- 111, 211 -> all match - return
+- 112, 212 -> night + relaxed match - return
+- 113, 213 -> night + stops match - return
+- 114, 214 -> relaxed + stops match - return
+- 115, 215 -> night - return
+- 116, 216 -> relaxed - return
+- 117, 217 -> stops - return
+- 118, 218 -> none - return
+
+
