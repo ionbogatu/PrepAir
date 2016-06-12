@@ -263,11 +263,12 @@ footer{
 }
 
 .add-new.add-preference{
-    display: block;
+    display: inline-block;
+    margin-bottom: 20px;
     clear: both;
 }
 
-.dropdown.value{
+.preference-wrapper .value, .preference-wrapper .value2{
     float: left;
     margin-right: 10px;
 }
@@ -284,5 +285,60 @@ footer{
 }
 
 .preference-message{
+    display: none;
+}
+
+.user-preferences{
+    margin-bottom: 20px !important;
+}
+
+.user-preferences > thead > tr > td:nth-child(1){
+    width: 20%;
+}
+
+.user-preferences > thead > tr > td:nth-child(2){
+    width: 60%;
+}
+
+.user-preferences > thead > tr > td:nth-child(3){
+    width: 20%;
+}
+
+.update-preference, .delete-preference{
+    margin-right: 10px;
+    cursor: pointer;
+}
+
+.update-preference:hover{
+    color: limegreen;
+}
+
+.delete-preference:hover{
+    color: red;
+}
+
+.dash{
+    margin: 0 10px;
+}
+
+.update-success, .update-error{
+    display: none;
+}
+
+/* socnet login */
+
+.social-networks-login-box{
+    margin-top: 20px;
+}
+
+.socnet-message{
+    display: none;
+}
+
+.linkWithFB{
+    float: right;
+}
+
+.fb-link-item{
     display: none;
 }

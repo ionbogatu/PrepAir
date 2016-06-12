@@ -1,3 +1,8 @@
 [16-04-2016 20:12:00 - 16-04-2016 21:15:00] - Cozma Laurentiu - Modificarea paginii principale index.html - crearea meniului si divizarea paginii in sectiuni, adaugarea foii de stiluri style.css si a fontului Lobster
 [21-04-2016 07:09:00 - 21-04-2016 11:00:00] - Bogatu Ion - Adaugarea functionalitatii de logare
 [06-06-2016 10:05:00 - 07-06-2016 01:37:00] - Bogatu Ion - Finisarea paginii de search si crearea functionalitatii de adaugare a preferintelor
+[11-06-2016 07:48:00 - 11-06-2016 15:32:00] - Bogatu Ion - Administrarea de preferinte pentru utilizatori
+[12-06-2016 10:12:00 - 12-06-2016 15:35:00] - Bogatu Ion - Adaugarea optiunilor de logare folosind facebook si google+
+
+
+pentru preluarea locatiilor, facebook - https://developers.facebook.com/docs/graph-api/reference/v2.6/user/locations
