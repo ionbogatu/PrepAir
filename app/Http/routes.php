@@ -24,7 +24,12 @@ Route::auth();
 Route::post('/flights', 'UserController@searchForFlights');
 Route::post('/loadAirportsList', 'UserController@loadAirportsList');
 Route::post('/loadAllAirportsList', 'UserController@loadAllAirportsList');
+Route::post('/loadAllAirlinesList', 'UserController@loadAllAirlinesList');
+Route::post('/loadAllRoutesList', 'UserController@loadAllRoutesList');
 Route::post('/deletePreference', 'UserController@deletePreference');
+Route::post('/addPreferences', 'UserController@addPreferences');
+Route::post('/updatePersonalInformation', 'UserController@updatePersonalInformation');
+Route::post('/getUserByFBId', 'UserController@getUserByFBId');
 
 /* Administration part */
 

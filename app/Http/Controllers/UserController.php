@@ -62,7 +62,50 @@ class UserController extends Controller{
             ])
             ->take(10)
             ->get();
-        return view('profile', ['user' => Auth::user(), 'routes' => $routes]);
+
+        $preferences = DB::table('preferences')
+            ->where('preferences.user_id', Auth::user()->id)
+            ->orderBy('preferences.type', 'asc')
+            ->select(
+                'preferences.id as id',
+                'preferences.type as type_id',
+                'preferences.value1 as value1',
+                'preferences.value2 as value2'
+            )
+            ->get();
+
+        if(!empty($preferences)) {
+            foreach ($preferences as &$preference) {
+                if ($preference->type_id == 1) {
+                    // destination airport
+                    $preference->value1 = DB::table('airports')
+                        ->where('airports.id', $preference->value1)
+                        ->first();
+                } else if ($preference->type_id == 2) {
+                    // airline
+                    $preference->value1 = DB::table('airlines')
+                        ->where('airlines.id', $preference->value1)
+                        ->first();
+                } else if ($preference->type_id == 3) {
+                    // source airport
+                    // destination airport
+                    $preference->value1 = DB::table('airports')
+                        ->where('airports.id', $preference->value1)
+                        ->first();
+                    $preference->value2 = DB::table('airports')
+                        ->where('airports.id', $preference->value2)
+                        ->first();
+                } else if ($preference->type_id == 4) {
+                    // number of stops
+                    // do nothing
+                }
+            }
+            unset($preference);
+        }else{
+            $preferences = null;
+        }
+
+        return view('profile', ['user' => Auth::user(), 'routes' => $routes, 'preferences' => $preferences]);
     }
 
     /**
@@ -589,106 +632,56 @@ class UserController extends Controller{
             !empty($result['result'])
         ){
             $response = '';
-            /*if(
-                is_array($result['result'])
-            ){*/
-                // grab the right message for user according to statusCode
-                if(
-                    $result['statusCode'] === 3 ||
-                    $result['statusCode'] === 4 ||
-                    $result['statusCode'] === 12 ||
-                    $result['statusCode'] === 22 ||
-                    $result['statusCode'] === 118 ||
-                    $result['statusCode'] === 218
-                ) {
-                    $response = '<br/><br/>
-                    <div class="ui blue message">
-                        <div class="header">
-                            Sorry, we cannot found any routes for your request
-                        </div>
-                        <br/>
-                        Instead, we\'ve prepared for you some <strong>hot offers</strong>
-                    </div>
-                    <h4 class="ui dividing header teal">Hot offers</h4>';
-                }else if($result['statusCode'] === 111){
-                    $response = '<br/><br/><h4 class="ui dividing header teal">Results</h4>';
-                }else if(
-                    $result['statusCode'] === 211 ||
-                    $result['statusCode'] === 112 ||
-                    $result['statusCode'] === 212 ||
-                    $result['statusCode'] === 113 ||
-                    $result['statusCode'] === 213 ||
-                    $result['statusCode'] === 114 ||
-                    $result['statusCode'] === 214 ||
-                    $result['statusCode'] === 115 ||
-                    $result['statusCode'] === 215 ||
-                    $result['statusCode'] === 116 ||
-                    $result['statusCode'] === 216 ||
-                    $result['statusCode'] === 117 ||
-                    $result['statusCode'] === 217
-                ){
-                    $response = '<br/><br/>
-                    <div class="ui blue message">
-                        <div class="header">
+            // grab the right message for user according to statusCode
+            if(
+                $result['statusCode'] === 3 ||
+                $result['statusCode'] === 4 ||
+                $result['statusCode'] === 12 ||
+                $result['statusCode'] === 22 ||
+                $result['statusCode'] === 118 ||
+                $result['statusCode'] === 218
+            ) {
+                $response = '<br/><br/>
+                <div class="ui blue message">
+                    <div class="header">
                         Sorry, we cannot found any routes for your request
-                        </div>
-                        <br/>
-                        But, you can take a look at similar flights
-                    </div>';
-                    $response .= '<h4 class="ui dividing header teal">Suggestions</h4>';
-                }
+                    </div>
+                    <br/>
+                    Instead, we\'ve prepared for you some <strong>hot offers</strong>
+                </div>
+                <h4 class="ui dividing header teal">Hot offers</h4>';
+            }else if($result['statusCode'] === 111){
+                $response = '<br/><br/><h4 class="ui dividing header teal">Results</h4>';
+            }else if(
+                $result['statusCode'] === 211 ||
+                $result['statusCode'] === 112 ||
+                $result['statusCode'] === 212 ||
+                $result['statusCode'] === 113 ||
+                $result['statusCode'] === 213 ||
+                $result['statusCode'] === 114 ||
+                $result['statusCode'] === 214 ||
+                $result['statusCode'] === 115 ||
+                $result['statusCode'] === 215 ||
+                $result['statusCode'] === 116 ||
+                $result['statusCode'] === 216 ||
+                $result['statusCode'] === 117 ||
+                $result['statusCode'] === 217
+            ){
+                $response = '<br/><br/>
+                <div class="ui blue message">
+                    <div class="header">
+                    Sorry, we cannot found any routes for your request
+                    </div>
+                    <br/>
+                    But, you can take a look at similar flights
+                </div>';
+                $response .= '<h4 class="ui dividing header teal">Suggestions</h4>';
+            }
 
-                foreach($result['result'] as $flight){
-                    $response .= $this->computeHtmlResponse($flight);
-                }
-                unset($result);
-            /*}else if(is_object($result['result'])){
-                // grab the right message for usser according to statusCode
-                if(
-                    $result['statusCode'] === 3 ||
-                    $result['statusCode'] === 4 ||
-                    $result['statusCode'] === 12 ||
-                    $result['statusCode'] === 22 ||
-                    $result['statusCode'] === 118 ||
-                    $result['statusCode'] === 218
-                ) {
-                    $response = '<br/><br/>
-                    <div class="ui yellow message">
-                        <div class="header">
-                            Sorry, we cannot found any routes for your request
-                        </div>
-                        <br/>
-                        Instead, we\'ve prepared for you some <strong>hot offers</strong>
-                    </div>
-                    <h4 class="ui dividing header green result-header-offers">Hot offers</h4>';
-                }else if($result['statusCode'] === 111){
-                    $response = '<h4 class="ui dividing header teal result-header">Results</h4>';
-                }else if(
-                    $result['statusCode'] === 211 ||
-                    $result['statusCode'] === 112 ||
-                    $result['statusCode'] === 212 ||
-                    $result['statusCode'] === 113 ||
-                    $result['statusCode'] === 213 ||
-                    $result['statusCode'] === 114 ||
-                    $result['statusCode'] === 214 ||
-                    $result['statusCode'] === 115 ||
-                    $result['statusCode'] === 215 ||
-                    $result['statusCode'] === 116 ||
-                    $result['statusCode'] === 216 ||
-                    $result['statusCode'] === 117 ||
-                    $result['statusCode'] === 217
-                ){
-                    echo '<div class="ui yellow message">
-                        <div class="header">
-                        Sorry, we cannot found any routes for your request
-                        </div>
-                        <br/>
-                        But, you can take a look at similar flights
-                    </div>';
-                    $response = '<h4 class="ui dividing header yellow result-header-suggestions">Suggestions</h4>';
-                }
-                $response .= $this->computeHtmlResponse($result);
-            }*/
+            foreach($result['result'] as $flight){
+                $response .= $this->computeHtmlResponse($flight);
+            }
+            unset($result);
         }else{
             $response = 'Sorry, we have no suggestions for you!';
         }
@@ -770,7 +763,7 @@ class UserController extends Controller{
                     !DB::table('statistics')
                         ->insert([
                             'id' => null,
-                            'user_id' => isset($_SESSION['user']) ? $_SESSION['user']->id : null,
+                            'user_id' => isset(Auth::user()->id) ? Auth::user()->id : null,
                             'route_id' => $flight->id,
                             'search_timestamp' => date('Y-m-d H:i:s', time())
                         ])
@@ -794,7 +787,7 @@ class UserController extends Controller{
                             !DB::table('statistics')
                                 ->insert([
                                     'id' => null,
-                                    'user_id' => isset($_SESSION['user']) ? $_SESSION['user']->id : null,
+                                    'user_id' => isset(Auth::user()->id) ? Auth::user()->id : null,
                                     'route_id' => $flight->id,
                                     'search_timestamp' => date('Y-m-d H:i:s', time())
                                 ])
@@ -823,7 +816,7 @@ class UserController extends Controller{
      */
 
     public function loadAirportsList(){
-        $query = $_POST['query'];
+        $query = strip_tags($_POST['query']);
         if(strlen($query) == 3){
             $response = DB::table('airports')
                 ->where('iata_faa', 'like', $query . '%')
@@ -846,11 +839,24 @@ class UserController extends Controller{
     }
 
     /**
+     * Get the full list of all airlines
+     */
+
+    public function loadAllAirlinesList(){
+        $airlines = DB::table('airlines')
+            ->orderBy('name', 'asc')
+            ->get();
+
+        return !empty($airlines) ? json_encode(['response' => $airlines]) : json_encode(['response' => '0']);
+    }
+
+    /**
      * Get the full list of all airports
      */
 
     public function loadAllAirportsList(){
         $airports = DB::table('airports')
+            ->orderBy('country', 'asc')
             ->get();
 
         return !empty($airports) ? json_encode(['response' => $airports]) : json_encode(['response' => '0']);
@@ -861,7 +867,7 @@ class UserController extends Controller{
      */
 
     public function deletePreference(){
-        $preference_id = htmlspecialchars(stripslashes($_POST['preference_id']));
+        $preference_id = strip_tags($_POST['preference_id']);
         if(
             !DB::table('preferences')
                 ->where('id', $preference_id)
@@ -873,4 +879,192 @@ class UserController extends Controller{
         }
     }
 
+    /**
+     * Adds user's preferences
+     */
+
+    public function addPreferences(){
+        $preferences = json_decode(strip_tags(json_encode($_POST['preferences'])));
+        $response = null;
+        if(!empty($preferences)) {
+            foreach ($preferences as $preference) {
+                if ($preference->type == 'airport') {
+                    $id = DB::table('preferences')
+                        ->insertGetId([
+                            'user_id' => Auth::user()->id,
+                            'type' => 1,
+                            'value1' => $preference->value1,
+                            'value2' => null
+                        ]);
+                    if(
+                        !isset($id)
+                    ){
+                        echo 1;
+                        return;
+                    }else{
+                        // append new preference to response
+                        $airport_data = DB::table('airports')
+                            ->where('id', $preference->value1)
+                            ->first();
+                        $airport = ['type_id' => 1, 'id' => $id, 'value1' => $airport_data];
+                        $response[] = $airport;
+                    }
+                } else if($preference->type == 'airline') {
+                    $id = DB::table('preferences')
+                        ->insertGetId([
+                            'id' => null,
+                            'user_id' => Auth::user()->id,
+                            'type' => 2,
+                            'value1' => $preference->value1,
+                            'value2' => null
+                        ]);
+                    if(
+                        !isset($id)
+                    ){
+                        echo 1;
+                        return;
+                    }else{
+                        // append new preference to response
+                        $airline_data = DB::table('airlines')
+                            ->where('id', $preference->value1)
+                            ->first();
+                        $airline = ['type_id' => 2, 'id' => $id, 'value1' => $airline_data];
+                        $response[] = $airline;
+                    }
+                } else if($preference->type == 'route') {
+                    $id = DB::table('preferences')
+                        ->insertGetId([
+                            'id' => null,
+                            'user_id' => Auth::user()->id,
+                            'type' => 3,
+                            'value1' => $preference->value1,
+                            'value2' => $preference->value2
+                        ]);
+                    if(
+                        !isset($id)
+                    ){
+                        echo 1;
+                        return;
+                    }else{
+                        // append new preference to response
+                        $source_airport_data = DB::table('airports')
+                            ->where('id', $preference->value1)
+                            ->first();
+                        $destination_airport_data = DB::table('airports')
+                            ->where('id', $preference->value2)
+                            ->first();
+                        $route = ['type_id' => 3, 'id' => $id, 'value1' => $source_airport_data, 'value2' => $destination_airport_data];
+                        $response[] = $route;
+                    }
+                } else if($preference->type == 'stop') {
+                    $id = DB::table('preferences')
+                        ->insertGetId([
+                            'id' => null,
+                            'user_id' => Auth::user()->id,
+                            'type' => 4,
+                            'value1' => $preference->value1,
+                            'value2' => null
+                        ]);
+                    if(
+                        !isset($id)
+                    ){
+                        echo 1;
+                        return;
+                    }else{
+                        // append new preference to response
+                        $stop = ['type_id' => 4, 'id' => $id, 'value1' => $preference->value1];
+                        $response[] = $stop;
+                    }
+                }
+            }
+            unset($preference);
+        }
+
+        if(!empty($preferences)){
+            echo json_encode($response);
+        }else{
+            echo 1;
+            return;
+        }
+        return;
+    }
+
+    /**
+     * Updates user's information (name and password)
+     */
+
+    public function updatePersonalInformation(){
+        $data = null;
+        $data = $_POST['data'];
+        $query_params = null;
+
+        $user = Auth::user();
+
+        if(
+            isset($data['name'])
+        ){
+            if($user->name !== $data['name']) {
+                $query_params['name'] = $data['name'];
+            }
+        }
+
+        if(
+            isset($data['password']) &&
+            isset($data['confirm_password'])
+        ){
+            if(
+                $data['password'] === $data['confirm_password'] &&
+                $data['password'] !== $user->password
+            ){
+                $query_params['password'] = bcrypt($data['password']);
+            }else{
+                echo 0;
+                return;
+            }
+        }
+
+        if(
+            isset($query_params)
+        ){
+            if(
+                !DB::table('users')
+                    ->where('id', Auth::user()->id)
+                    ->update($query_params)
+            ){
+                echo 0;
+                return;
+            }else{
+                echo 1;
+                return;
+            }
+        }else{
+            echo 0;
+            return;
+        }
+    }
+
+    /**
+     * Return a status message that corresponds to user's existence and linking between fb and the app
+     */
+
+    public function getUserByFBId(){
+        $data = json_decode(strip_tags(json_encode($_POST['response'])));
+        if($data->status === 'connected'){
+            $user = User::where('fb_user_id', $data->authResponse->userID)
+                ->first();
+            if(
+                !empty($user)
+            ){
+                Auth::login($user);
+                echo json_encode(['response' => 'connected']);
+                return;
+            }else{
+                echo json_encode(['response' => 'not_linked']);
+                return;
+            }
+        }else{
+            echo json_encode(['response' => 'disconnected']);
+            return;
+        }
+    }
 }

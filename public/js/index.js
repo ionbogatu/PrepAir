@@ -133,4 +133,63 @@ $(document).ready(function(){
             }
         });
     });
+
+    $('.update-profile-btn').click(function(){
+        var data = {};
+        var name = $('.update-profile-data input[name="name"]').val();
+        var password = $('.update-profile-data input[name="password"]').val();
+        var confirm_password = $('.update-profile-data input[name="confirm_password"]').val();
+
+        if(name !== ''){
+            data.name = name;
+        }
+        if(
+            password !== '' &&
+            confirm_password !== ''
+        ){
+            if(password === confirm_password){
+                data.password = password;
+                data.confirm_password = confirm_password;
+            }else{
+                // error: password and confirm password don't match
+            }
+        }
+
+        if(!$.isEmptyObject(data)){
+            $.ajax({
+                'url': '/updatePersonalInformation',
+                'method': 'post',
+                'headers': { 'X-CSRF-Token' : $('meta[name=csrf-token]').attr('content') },
+                'data': {'data': data},
+                'success': function(data){
+                    console.log(data);
+                    if(data == 1){
+                        $('.update-success').css({'display': 'block'});
+                        setTimeout(function(){
+                            $('.update-success').css({'display': 'none'});
+                        }, 3000);
+                        $('.update-error').css({'display': 'none'});
+                    }else if(data == 0){
+                        $('.update-success').css({'display': 'none'});
+                        $('.update-error').css({'display': 'block'});
+                        setTimeout(function(){
+                            $('.update-error').css({'display': 'none'});
+                        },3000);
+                    }
+                }
+            })
+        }
+    });
+
+    $('.linkWithFB').click(function(){
+        FB.api('/me', function(response){
+            console.log(response);
+        });
+    });
+
+    $('.logout').click(function(event){
+        event.preventDefault();
+        FB.logout();
+        window.location.replace('/logout');
+    });
 });
