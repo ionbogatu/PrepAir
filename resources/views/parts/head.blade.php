@@ -9,8 +9,7 @@
 <link href='/css/font-awesome.min.css' rel='stylesheet' type='text/css'>
 <!-- Google+ -->
 <meta name="google-signin-scope" content="profile email">
-<meta name="google-signin-client_id" content="YOUR_CLIENT_ID.apps.googleusercontent.com">
-<script src="https://apis.google.com/js/platform.js" async defer></script>
+<meta name="google-signin-client_id" content="720802107451-m34ec34aplpsti7ai44vn1vbjlcer7fu.apps.googleusercontent.com">
 <!-- Local resources -->
 <link rel="stylesheet" type="text/css" href="/css/index.css">
 <script src="/js/index.js"></script>

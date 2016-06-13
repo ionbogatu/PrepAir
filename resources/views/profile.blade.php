@@ -10,65 +10,59 @@
 @extends ('layouts.layout')
 @section ('content')
     <script>
-        function statusChangeCallback(response) {
-            //console.log('statusChangeCallback');
-            //console.log(response);
-            // The response object is returned with a status field that lets the
-            // app know the current login status of the person.
-            // Full docs on the response object can be found in the documentation
-            // for FB.getLoginStatus().
-            if (response.status === 'connected') {
-                // do nothing
-                // the facebook account is already linked to our app
-            } else if (response.status === 'not_authorized') {
-                $('.fb-link-item').css({'display': 'block'});
-            }
-        }
-
-        // This function is called when someone finishes with the Login
-        // Button.  See the onlogin handler attached to it in the sample
-        // code below.
-        function checkLoginState() {
-            FB.getLoginStatus(function(response) {
-                statusChangeCallback(response);
-            });
-        }
-
         window.fbAsyncInit = function() {
             FB.init({
                 appId      : '613779242110731',
-                cookie     : true,  // enable cookies to allow the server to access
-                                    // the session
-                status     : true,  // get info about current user
-                xfbml      : true,  // parse social plugins on this page
-                version    : 'v2.5' // use graph api version 2.5
+                xfbml      : true,
+                version    : 'v2.6'
             });
-
-            // Now that we've initialized the JavaScript SDK, we call
-            // FB.getLoginStatus().  This function gets the state of the
-            // person visiting this page and can return one of three states to
-            // the callback you provide.  They can be:
-            //
-            // 1. Logged into your app ('connected')
-            // 2. Logged into Facebook, but not your app ('not_authorized')
-            // 3. Not logged into Facebook and can't tell if they are logged into
-            //    your app or not.
-            //
-            // These three cases are handled in the callback function.
-
-            FB.getLoginStatus(function(response) {
-                statusChangeCallback(response);
-            });
-
+            checkLoginStatus();
         };
-        // Load the SDK asynchronously
-        (function(d, s, id) {
+
+        (function(d, s, id){
             var js, fjs = d.getElementsByTagName(s)[0];
-            if (d.getElementById(id)) return;
+            if (d.getElementById(id)) {return;}
             js = d.createElement(s); js.id = id;
-            js.src = "//connect.facebook.net/en_US/sdk/debug.js";
+            js.src = "//connect.facebook.net/en_US/sdk.js";
             fjs.parentNode.insertBefore(js, fjs);
         }(document, 'script', 'facebook-jssdk'));
+
+        function checkLoginStatus(){
+            FB.getLoginStatus(function(response){
+                console.log(response);
+                if (response.status === 'connected') {
+                    // Logged into your app and Facebook.
+                    // check if user has linked it's profile to our page
+                    FB.api('/me', function(user_data){
+                        $.ajax({
+                            'url': '/getUserByFBId',
+                            'method': 'post',
+                            'headers': {'X-CSRF-Token': $('meta[name=csrf-token]').attr('content')},
+                            'data': {'response': response, 'user_data': user_data},
+                            'dataType': 'json',
+                            'success': function(data){
+                                console.log(data);
+                                if(data.response === 'connected'){
+                                    // user is connected
+                                    $('.fb-link-item').css({'display': 'none'});
+                                }else if(data.response === 'not_linked'){
+                                    // user is connected but his/her profile is not linked to our DB row
+                                    $('.fb-link-item').css({'display': 'block'});
+                                }else if(data.response === 'disconnected'){
+                                    // user is not connected
+                                    $('.fb-link-item').css({'display': 'none'});
+                                }
+                            }
+                        });
+                    });
+                } else if (response.status === 'not_authorized') {
+                    // The person is logged into Facebook, but not your app.
+                } else {
+                    // The person is not logged into Facebook, so we're not sure if
+                    // they are logged into this app or not.
+                }
+            });
+        }
     </script>
     <br/>
     <br/>
@@ -81,7 +75,7 @@
                     <input name="name" placeholder="{{ $user->name }}" type="text">
                 </div>
                 <div class="field"></div>
-                <div class="field fb-link-item">
+                <div class="field fb-link-item fb-link-message">
                     <p>
                         With your facebook account you can have access to all the functionalities that we offer.
                         To link your facebook account with our application, please click the button below.

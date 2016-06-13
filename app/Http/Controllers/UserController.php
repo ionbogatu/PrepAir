@@ -1049,9 +1049,11 @@ class UserController extends Controller{
 
     public function getUserByFBId(){
         $data = json_decode(strip_tags(json_encode($_POST['response'])));
+        $user_data = json_decode(strip_tags(json_encode($_POST['user_data'])));
         if($data->status === 'connected'){
-            $user = User::where('fb_user_id', $data->authResponse->userID)
+            $user = User::where('fb_user_id', 'like', $data->authResponse->userID)
                 ->first();
+
             if(
                 !empty($user)
             ){
@@ -1059,12 +1061,69 @@ class UserController extends Controller{
                 echo json_encode(['response' => 'connected']);
                 return;
             }else{
-                echo json_encode(['response' => 'not_linked']);
-                return;
+                if(
+                    isset($user_data->email) &&
+                    isset($user_data->name) &&
+                    isset($user_data->id)
+                ){
+                    $user_id =DB::table('users')
+                        ->insertGetId(
+                            [
+                                'id' => null,
+                                'name' => $user_data->name,
+                                'password' => null,
+                                'email' => $user_data->email,
+                                'role_id' => 1,
+                                'remember_token' => null,
+                                'fb_user_id' => $user_data->id,
+                                'created_at' => date('Y-m-d H:i:s'),
+                                'updated_at' => date('Y-m-d H:i:s'),
+                            ]);
+                    if(
+                        !$user_id
+                    ){
+                        echo json_encode(['response' => 'not_linked']);
+                        return;
+                    }else{
+                        $user = User::find($user_id);
+                        Auth::login($user);
+                        echo json_encode(['response' => 'connected']);
+                        return;
+                    }
+                }else{
+                    echo json_encode(['response' => 'not_linked']);
+                    return;
+                }
             }
         }else{
             echo json_encode(['response' => 'disconnected']);
             return;
+        }
+    }
+
+    public function linkWithFacebook(){
+        $response = json_decode(strip_tags(json_encode($_POST['response'])));
+        if($response){
+            $profile_is_linked = DB::table('users')
+                ->where('fb_user_id', $response->id)
+                ->count();
+            if($profile_is_linked > 0){
+                echo json_encode(["response" => 2]);
+                return;
+            }
+            if(Auth::user()->fb_user_id != $response->id){
+                if(
+                    !DB::table('users')
+                        ->where('id', Auth::user()->id)
+                        ->update(['fb_user_id' => $response->id])
+                ){
+                    echo json_encode(["response" => 0]);
+                    return;
+                }else{
+                    echo json_encode(["response" => 1]);
+                    return;
+                }
+            }
         }
     }
 }
