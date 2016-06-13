@@ -2,6 +2,22 @@
  * Created by John Rich on 4/21/2016.
  */
 
+window.fbAsyncInit = function() {
+    FB.init({
+        appId      : '613779242110731',
+        xfbml      : true,
+        version    : 'v2.6'
+    });
+};
+
+(function(d, s, id){
+    var js, fjs = d.getElementsByTagName(s)[0];
+    if (d.getElementById(id)) {return;}
+    js = d.createElement(s); js.id = id;
+    js.src = "//connect.facebook.net/en_US/sdk.js";
+    fjs.parentNode.insertBefore(js, fjs);
+}(document, 'script', 'facebook-jssdk'));
+
 $(document).ready(function(){
     $('input[type=text]').val('');
     function loadAirportsList(field, type){
@@ -184,12 +200,47 @@ $(document).ready(function(){
     $('.linkWithFB').click(function(){
         FB.api('/me', function(response){
             console.log(response);
+            $.ajax({
+                'url': '/linkWithFacebook',
+                'method': 'post',
+                'headers': {'X-CSRF-Token': $('meta[name=csrf-token]').attr('content')},
+                'data': {'response': response},
+                'dataType': 'json',
+                'beforeSend': function(){
+                    $('.linkWithFB').addClass('loading');
+                },
+                'success': function(data){
+                    if(data.response == 1){
+                        // ok
+                        $('.linkWithFB').removeClass('loading');
+                        $('.fb-link-item').remove();
+                    }else if(data.response == 0){
+                        // cannot update
+                        $('.fb-link-message').addClass('error-message').html('A fatal error occured. Please contact the administrator: <a href="mailto:ionbogatu@gmail.com">Bogatu Ion</a>')
+                        $('.linkWithFB').removeClass('loading');
+                    }else if(data.response == 2){
+                        // profile already linked
+                        $('.fb-link-message').addClass('error-message').html('We are sorry, but this facebook account has been linked to another user. Please contact the administrator: <a href="mailto:ionbogatu@gmail.com">Bogatu Ion</a>')
+                        $('.linkWithFB').removeClass('loading');
+                    }
+                },
+                'error': function(){
+                    $('.fb-link-message').addClass('error-message').html('A fatal error occured. Please contact the administrator: <a href="mailto:ionbogatu@gmail.com">Bogatu Ion</a>')
+                    $('.linkWithFB').removeClass('loading');
+                }
+            })
         });
     });
 
-    $('.logout').click(function(event){
+    $('#logout').click(function(event){
         event.preventDefault();
-        FB.logout();
+        FB.getLoginStatus(function(response) {
+            if(
+                response.status === 'connected'
+            ){
+                FB.logout(function(response){});
+            }
+        });
         window.location.replace('/logout');
     });
 });

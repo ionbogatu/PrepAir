@@ -328,6 +328,8 @@ footer{
 /* socnet login */
 
 .social-networks-login-box{
+    float: left;
+    margin-right: 10px;
     margin-top: 20px;
 }
 
@@ -341,4 +343,8 @@ footer{
 
 .fb-link-item{
     display: none;
+}
+
+.error-message{
+    color: red;
 }

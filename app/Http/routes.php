@@ -30,6 +30,7 @@ Route::post('/deletePreference', 'UserController@deletePreference');
 Route::post('/addPreferences', 'UserController@addPreferences');
 Route::post('/updatePersonalInformation', 'UserController@updatePersonalInformation');
 Route::post('/getUserByFBId', 'UserController@getUserByFBId');
+Route::post('/linkWithFacebook', 'UserController@linkWithFacebook');
 
 /* Administration part */
 
