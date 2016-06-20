@@ -348,3 +348,12 @@ footer{
 .error-message{
     color: red;
 }
+
+.location-picker-wrapper{
+    border: 1px solid dodgerblue;
+}
+
+.location-message{
+    margin-bottom: 20px;
+    display: none;
+}

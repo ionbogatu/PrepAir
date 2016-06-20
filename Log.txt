@@ -3,6 +3,4 @@
 [06-06-2016 10:05:00 - 07-06-2016 01:37:00] - Bogatu Ion - Finisarea paginii de search si crearea functionalitatii de adaugare a preferintelor
 [11-06-2016 07:48:00 - 11-06-2016 15:32:00] - Bogatu Ion - Administrarea de preferinte pentru utilizatori
 [12-06-2016 10:12:00 - 12-06-2016 15:35:00] - Bogatu Ion - Adaugarea optiunilor de logare folosind facebook si google+
-
-
-pentru preluarea locatiilor, facebook - https://developers.facebook.com/docs/graph-api/reference/v2.6/user/locations
+[19-06-2016 17:00:00 - 20-06-2016 04:01:00] - Bogatu Ion preluare locatiei userului si afisarea rutelor conform locatiei

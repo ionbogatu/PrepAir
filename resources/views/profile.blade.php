@@ -34,6 +34,7 @@
                     // Logged into your app and Facebook.
                     // check if user has linked it's profile to our page
                     FB.api('/me', function(user_data){
+                        console.log(user_data);
                         $.ajax({
                             'url': '/getUserByFBId',
                             'method': 'post',
@@ -95,6 +96,31 @@
                 <div class="field fb-link-item">
                     <label style="visibility: hidden;">Link with facebook</label>
                     <button class="ui blue button linkWithFB">Link with facebook</button>
+                </div>
+            </div>
+            <div class="three fields">
+                <div class="field">
+                    <label>Location:</label>
+                    <input type="text" class="form-control" id="us2-address" />
+                </div>
+                <div class="field">
+                    <label>Radius:</label>
+                    <input type="text" class="form-control" id="us2-radius" />
+                </div>
+            </div>
+            <div class="ui message location-message"></div>
+            <div class="twelve fields location-picker-wrapper">
+                <div id="us2" style="width: 100%; height: 400px;"></div>
+            </div>
+            <br/>
+            <div class="three fields">
+                <div class="field">
+                    <label>Lat:</label>
+                    <input type="text" class="form-control" id="us2-lat" />
+                </div>
+                <div class="field">
+                    <label>Lon:</label>
+                    <input type="text" class="form-control" id="us2-lon" />
                 </div>
             </div>
             <br/>

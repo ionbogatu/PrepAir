@@ -105,10 +105,10 @@
                                     <i class="fa fa-btn fa-sign-in"></i>Login
                                 </button>
                                 <div id="facebookLogIn" class="social-networks-login-box">
-                                    <fb:login-button data-scope="public_profile,email" onlogin="login">
+                                    <fb:login-button data-scope="public_profile, email" onlogin="login">
                                     </fb:login-button>
                                 </div>
-                                <div id="googleSignIn" class="social-networks-login-box"></div>
+                                <!--div id="googleSignIn" class="social-networks-login-box"></div>
                                 <script>
                                     function onSuccess(googleUser) {
                                         console.log('Logged in as: ' + googleUser.getBasicProfile().getName());
@@ -128,7 +128,7 @@
                                         });
                                     }
                                 </script>
-                                <script src="https://apis.google.com/js/platform.js?onload=customGoogleSignInButton" async defer></script>
+                                <script src="https://apis.google.com/js/platform.js?onload=customGoogleSignInButton" async defer></script-->
                                 <br/><br/>
                                 <div class="ui warning message socnet-message"></div>
                             </div>

@@ -120,5 +120,50 @@
     <!-- Hottest offers -->
 
     <div class="results"></div>
+    <div class="most-searched-routes-by-user-location">
+        <br/>
+        <h4 class="ui dividing header blue">Suggestions according to your location</h4>
+        @if(!empty($most_searched_routes))
+            @foreach($most_searched_routes as $route)
+                <div class="result">
+                    <div class="departure">
+                        <div class="weather" style="background: url('http://openweathermap.org/img/w/{{ $route->source_weather['icon'] }}.png') no-repeat 50% 50%"> {{ $route->source_weather['temperature'] }} &#8451;
+                            <br/>
+                            <br/>
+                            <br/>
+                            <br/>
+                            <div style="text-align: center;"><strong style="text-align: center;">{{ $route->source_weather['description'] }}</strong></div>
+                        </div>
+                        <div class="data">
+                            <h3><strong>Departure: {{ $route->source_airport_id->country }}, {{ $route->source_airport_id->name }} ({{ !empty($route->source_airport_id->iata_faa) ? $route->source_airport_id->iata_faa : $route->source_airport_id->icao }})</strong></h3>
+                            <h4>Departure time: {{ date('Y-m-d') }}, {{ $route->departure_time }}</h4>
+                            <br/>
+                            <h6>{{ $route->stops }} stops</h6>
+                            @for($i = 1; $i <= $route->relaxed_note; $i++)
+                                <i class="fa fa-star"></i>
+                            @endfor
+                        </div>
+                    </div>
+                    <div class="arrive">
+                        <div class="weather" style="background: url('http://openweathermap.org/img/w/{{ $route->destination_weather['icon'] }}.png') no-repeat 50% 50%">
+                            temp &#8451;
+                            <br/>
+                            <br/>
+                            <br/>
+                            <br/>
+                            <div style="text-align: center;"><strong>{{ $route->destination_weather['description'] }}</strong></div>
+                        </div>
+                        <div class="data">
+                            <h3><strong>Arrival: {{ $route->destination_airport_id->country }}, {{ $route->destination_airport_id->name }} ({{ !empty($route->destination_airport_id->iata_faa) ? $route->destination_airport_id->iata_faa : $route->destination_airport_id->icao }})</strong></h3>
+                            <h4>Arrival time: {{ date('Y-m-d') }}, {{ $route->arrival_time }}</h4>
+                            <br/>
+                            <br/>
+                            <div>with: {{ $route->airline_id->name }}</div>
+                        </div>
+                    </div>
+                </div>
+            @endforeach
+        @endif
+    </div>
 </div>
 @endsection

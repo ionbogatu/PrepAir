@@ -31,6 +31,7 @@ Route::post('/addPreferences', 'UserController@addPreferences');
 Route::post('/updatePersonalInformation', 'UserController@updatePersonalInformation');
 Route::post('/getUserByFBId', 'UserController@getUserByFBId');
 Route::post('/linkWithFacebook', 'UserController@linkWithFacebook');
+Route::post('/get-user-location', 'UserController@getUserLocation');
 
 /* Administration part */
 
@@ -43,3 +44,6 @@ Route::group(['namespace' => 'Admin', 'prefix' => 'admins', 'middleware' => 'adm
 /* Testing */
 
 Route::get('/test/weather', 'TestController@testWeather');
+Route::get('/googleapi', function(){
+    return view('test');
+});

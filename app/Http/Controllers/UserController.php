@@ -37,7 +37,16 @@ class UserController extends Controller{
         $airlines = DB::table('airlines')
             ->orderBy('name')
             ->get();
-        return view('flights', ['airlines' => $airlines]);
+
+        $user = Auth::user();
+
+        $most_searched_routes = [];
+
+        if(isset($user)){
+            $most_searched_routes = $this->getMostSearchedRoutesByLocation($user->latitude, $user->longitude);
+        }
+
+        return view('flights', ['airlines' => $airlines, 'most_searched_routes' => $most_searched_routes]);
     }
 
     /**
@@ -615,8 +624,8 @@ class UserController extends Controller{
                         <div style="text-align: center;"><strong>' . $arrival_weather['description'] . '</strong></div>
                     </div>
                     <div class="data">
-                        <h3><strong>Departure: ' . $destination_airport->country . ', ' . $destination_airport->name . ' (' . $destination_airport->iata_faa . ')</strong></h3>
-                        <h4>Departure time: ' . $arrival_date . ', ' . $result->arrival_time . '</h4>
+                        <h3><strong>Arrival: ' . $destination_airport->country . ', ' . $destination_airport->name . ' (' . $destination_airport->iata_faa . ')</strong></h3>
+                        <h4>Arrival time: ' . $arrival_date . ', ' . $result->arrival_time . '</h4>
                         <br/>
                         <br/>
                         <div>with: ' . $airline->name . '</div>
@@ -995,32 +1004,42 @@ class UserController extends Controller{
 
     public function updatePersonalInformation(){
         $data = null;
-        $data = $_POST['data'];
+        $data = json_decode(strip_tags(json_encode($_POST['data'])));
         $query_params = null;
 
         $user = Auth::user();
 
         if(
-            isset($data['name'])
+            isset($data->name)
         ){
-            if($user->name !== $data['name']) {
-                $query_params['name'] = $data['name'];
+            if($user->name !== $data->name) {
+                $query_params['name'] = $data->name;
             }
         }
 
         if(
-            isset($data['password']) &&
-            isset($data['confirm_password'])
+            isset($data->password) &&
+            isset($data->confirm_password)
         ){
             if(
-                $data['password'] === $data['confirm_password'] &&
-                $data['password'] !== $user->password
+                $data->password === $data->confirm_password &&
+                $data->password !== $user->password
             ){
-                $query_params['password'] = bcrypt($data['password']);
+                $query_params['password'] = bcrypt($data->password);
             }else{
                 echo 0;
                 return;
             }
+        }
+
+        if(
+            $data->latitude < 180 &&
+            $data->latitude > -180 &&
+            $data->longitude < 180 &&
+            $data->longitude > -180
+        ){
+            $query_params['latitude'] = $data->latitude;
+            $query_params['longitude'] = $data->longitude;
         }
 
         if(
@@ -1125,5 +1144,60 @@ class UserController extends Controller{
                 }
             }
         }
+    }
+
+    public function getUserLocation(){
+        $user = Auth::user();
+        $latitude = intval($user->latitude) == 0 ? 0 : $user->latitude;
+        $longitude = intval($user->longitude) == 0 ? 0 : $user->longitude;
+
+        return json_encode(['latitude' => $latitude, 'longitude' => $longitude]);
+    }
+
+    /**
+     * @param $lat - User's location latitude
+     * @param $lon - User's location longitude
+     *
+     * @return Most searched routes based on user's location
+     */
+
+    public function getMostSearchedRoutesByLocation($lat, $lon){
+        // select the nearest 3 airports by distance
+        $airports = DB::select('select airports.*, pow((airports.latitude - ?),2) + pow((airports.longitude - ?),2) as distance from `airports` order by distance asc limit 3', [$lat, $lon]);
+        $airport_ids = [];
+        foreach($airports as $airport){
+            $airport_ids[] = $airport->id;
+        }
+        $airport_ids = '(' . implode(', ', $airport_ids) . ')';
+        $results = [];
+        if(!empty($airport_ids)) {
+            // get top 12 searched routes sorted by nearest airports
+            $results = DB::select('select *, count(statistics.route_id) as `count` from routes join statistics on routes.id = statistics.route_id where routes.source_airport_id in ' . $airport_ids . ' group by statistics.route_id union select *, 0 as `count` from routes left join statistics on routes.id = statistics.route_id where statistics.route_id is null and routes.source_airport_id in ' . $airport_ids . ' order by `count` desc limit 12');
+        }
+
+        if(!empty($results)){
+            foreach($results as &$result){
+                // get source airport details
+                $result->source_airport_id = DB::table('airports')
+                    ->where('id', $result->source_airport_id)
+                    ->first();
+
+                $result->source_weather = $this->getWeather(time(), intval($result->source_airport_id->latitude), intval($result->source_airport_id->latitude));
+
+                // get destination airport details
+                $result->destination_airport_id = DB::table('airports')
+                    ->where('id', $result->destination_airport_id)
+                    ->first();
+
+                $result->destination_weather = $this->getWeather(time(), intval($result->destination_airport_id->latitude), intval($result->destination_airport_id->latitude));
+
+                // get airline details
+                $result->airline_id = DB::table('airlines')
+                    ->where('id', $result->airline_id)
+                    ->first();
+            }
+        }
+
+        return $results;
     }
 }
