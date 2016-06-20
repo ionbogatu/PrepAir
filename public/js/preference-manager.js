@@ -304,4 +304,57 @@ $(document).ready(function(){
     // preference actions
 
     prefereceActions();
+
+    // get user location
+
+    var latitude = 0;
+    var longitude = 0;
+
+    $.ajax({
+        'url': '/get-user-location',
+        'method': 'post',
+        'headers': {'X-CSRF-Token': $('meta[name=csrf-token]').attr('content')},
+        'dataType' : 'json',
+        'success': function(data){
+            if(
+                data.latitude !== 0 ||
+                data.longitude !== 0
+            ){
+                latitude = data.latitude;
+                longitude = data.longitude;
+            }
+
+            $('#us2').locationpicker({
+                location: {
+                    latitude: latitude,
+                    longitude: longitude
+                },
+                radius: 30,
+                zoom: 20,
+                inputBinding: {
+                    latitudeInput: $('#us2-lat'),
+                    longitudeInput: $('#us2-lon'),
+                    radiusInput: $('#us2-radius'),
+                    locationNameInput: $('#us2-address')
+                },
+                enableAutocomplete: true
+            });
+        }
+    });
+
+    $('#us2').locationpicker({
+        location: {
+            latitude: latitude,
+            longitude: longitude
+        },
+        radius: 300,
+        zoom: 2,
+        inputBinding: {
+            latitudeInput: $('#us2-lat'),
+            longitudeInput: $('#us2-lon'),
+            radiusInput: $('#us2-radius'),
+            locationNameInput: $('#us2-address')
+        },
+        enableAutocomplete: true
+    });
 });

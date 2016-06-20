@@ -155,6 +155,8 @@ $(document).ready(function(){
         var name = $('.update-profile-data input[name="name"]').val();
         var password = $('.update-profile-data input[name="password"]').val();
         var confirm_password = $('.update-profile-data input[name="confirm_password"]').val();
+        var latitude = $('#us2-lat').val();
+        var longitude = $('#us2-lon').val();
 
         if(name !== ''){
             data.name = name;
@@ -167,8 +169,27 @@ $(document).ready(function(){
                 data.password = password;
                 data.confirm_password = confirm_password;
             }else{
-                // error: password and confirm password don't match
+                $('.location-message').removeClass('positive').addClass('negative').text('Oops! Something went wrong. Confirm password doesn\'t match').css({'display': 'block'});
+                setTimeout(function(){
+                    $('.location-message').css({'display': 'none'});
+                }, 3000);
             }
+        }
+
+        if(
+            latitude < 180 &&
+            latitude > -180 &&
+            longitude < 180 &&
+            longitude > -180
+        ){
+            data.latitude = latitude;
+            data.longitude = longitude;
+        }else{
+            console.log(latitude, longitude);
+            $('.location-message').removeClass('positive').addClass('negative').text('Oops! Something went wrong. Wrong coordinates').css({'display': 'block'});
+            setTimeout(function(){
+                $('.location-message').css({'display': 'none'});
+            }, 3000);
         }
 
         if(!$.isEmptyObject(data)){

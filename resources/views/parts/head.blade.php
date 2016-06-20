@@ -1,6 +1,8 @@
 <!-- jquery -->
 <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.0/jquery.min.js"></script>
-<!--script src="/js/jquery-1.12.3.min.js"></script-->
+<!-- Google API -->
+<script type="text/javascript" src='http://maps.google.com/maps/api/js?libraries=places&key=AIzaSyCwtNFN5C5BcZyjkmMQ_UArj3JDJ_WirlA'></script>
+<script src="/jquery-picker/dist/locationpicker.jquery.js"></script>
 <!-- semantic ui -->
 <link rel="stylesheet" type="text/css" href="/semantic/dist/semantic.min.css">
 <script src="/semantic/dist/semantic.js"></script>
