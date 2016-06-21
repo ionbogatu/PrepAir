@@ -11,6 +11,7 @@ namespace App\Http\Controllers;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
+use Khill\Lavacharts\Laravel\LavachartsFacade as Lava;
 use Monolog\Logger as Log;
 use GuzzleHttp\Client;
 use App\User;
@@ -47,6 +48,87 @@ class UserController extends Controller{
         }
 
         return view('flights', ['airlines' => $airlines, 'most_searched_routes' => $most_searched_routes]);
+    }
+
+    /**
+     * @return \Illuminate\Contracts\View\Factory|\Illuminate\View\View
+     */
+
+    public function statistics(){
+
+        // render top searched chart
+
+        $routes = Lava::DataTable();
+
+        $response = DB::select('SELECT a1.`name` as name1, a1.country as country1, a2.name as name2, a2.country as country2, routes.departure_time, routes.arrival_time, count(statistics.id) as \'count\' FROM `statistics` join routes on statistics.route_id = routes.id join airports a1 on routes.source_airport_id = a1.id join airports a2 on routes.destination_airport_id = a2.id group by route_id order by count(statistics.id) desc limit 10');
+
+        $routes->addStringColumn('Top Routes')
+            ->addNumberColumn('Searched times');
+
+        foreach($response as $route){
+            $route_name = $route->name1 . ' ' . $route->country1 . ' - ' . $route->name2 . ' ' . $route->country2 . ' (' . $route->departure_time . ' - ' . $route->arrival_time . ')';
+            $routes->addRow([$route_name, $route->count]);
+        }
+        unset($route);
+
+        Lava::BarChart('Most searched routes', $routes, []);
+
+        $top_10_most_searched_routes = Lava::render('BarChart', 'Most searched routes', 'top-10-most-searched-routes-div', ['width' => "100%", 'height' => 300]);
+
+        // get statistics
+
+        $users_counter = DB::table('users')
+            ->count();
+
+        $airports_counter = DB::table('airports')
+            ->count();
+
+        $airlines_counter = DB::table('airlines')
+            ->count();
+
+        $routes_counter = DB::table('routes')
+            ->count();
+
+        $statistics = array(
+            'users_counter' => $users_counter,
+            'airports_counter' => $airports_counter,
+            'airlines_counter' => $airlines_counter,
+            'routes_counter' => $routes_counter,
+        );
+
+        // get routes grouped by searched timestamp
+
+        $grouped_routes = Lava::DataTable();
+
+        $routes = DB::select("select *, floor(time_to_sec(statistics.search_timestamp) / 3600) as 'from', ceil(time_to_sec(statistics.search_timestamp) / 3600) as 'to', count(id) as 'count' from statistics group by `from` order by `from` asc");
+
+        $grouped_routes->addStringColumn('Time interval')
+            ->addNumberColumn('Count');
+
+        for($i = 0; $i < 23; $i++){
+            $to = $i + 1;
+            $found = false;
+            foreach($routes as $route){
+                if(intval($route->to) === $i){
+                    $grouped_routes->addRow([$i.':00 - '. $to . ':00', $route->count]);
+                    $found = true;
+                }
+            }
+            unset($route);
+            if(!$found) {
+                $grouped_routes->addRow([$i . ':00 - ' . $to . ':00', 1]);
+            }
+        }
+
+        Lava::ColumnChart('Searching time', $grouped_routes, []);
+
+        $grouped_routes = Lava::render('ColumnChart', 'Searching time', 'searching-time', ['width' => "100%", 'height' => 700]);
+
+        return view('statistics', [
+            'top_10_most_searched_routes' => $top_10_most_searched_routes,
+            'statistics' => $statistics,
+            'grouped_routes' => $grouped_routes,
+        ]);
     }
 
     /**
@@ -534,11 +616,12 @@ class UserController extends Controller{
         $response = $client->request('GET', 'http://api.openweathermap.org/data/2.5/forecast/daily?lat=' . intval($lat) . '&lon=' . intval($lon) . '&cnt=10&mode=json&appid=30a1509ebfe4eb04e7c3d5db8ed97502');
 
         $data = json_decode((string)$response->getBody());
-
         $temps = $data->list;
 
-        $temp = '';
-        $icon = '';
+        $temp = $temps[0]->temp->day - 273;
+        $icon = $temps[0]->weather[0]->icon;
+        $description = $temps[0]->weather[0]->main;
+
         $i = 0;
         while($temps[$i]->dt < $time){
             $temp = $temps[$i]->temp->day - 273;
