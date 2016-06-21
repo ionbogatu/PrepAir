@@ -357,3 +357,19 @@ footer{
     margin-bottom: 20px;
     display: none;
 }
+
+.statistics-data{
+    list-style: none;
+    margin: 0;
+    padding: 10px 0;
+    font-size: 16px;
+    color: gray;
+}
+
+.statistics-data li{
+    padding: 3px 0;
+}
+
+.statistics-data li:hover{
+    color: #0099d4;
+}

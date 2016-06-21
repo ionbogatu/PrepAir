@@ -18,6 +18,7 @@ Route::get('/', function () {
 Route::get('/login', 'UserController@login');
 Route::get('/flights', 'UserController@flights');
 Route::get('/profile', 'UserController@profile');
+Route::get('/statistics', 'UserController@statistics');
 
 Route::auth();
 
@@ -32,6 +33,12 @@ Route::post('/updatePersonalInformation', 'UserController@updatePersonalInformat
 Route::post('/getUserByFBId', 'UserController@getUserByFBId');
 Route::post('/linkWithFacebook', 'UserController@linkWithFacebook');
 Route::post('/get-user-location', 'UserController@getUserLocation');
+
+/* REST API */
+
+Route::group(['namespace' => 'Api', 'prefix' => 'api'], function(){
+    Route::get('/', 'ApiController@index');
+});
 
 /* Administration part */
 

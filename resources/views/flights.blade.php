@@ -120,6 +120,7 @@
     <!-- Hottest offers -->
 
     <div class="results"></div>
+    @if(isset(Auth::user()->id))
     <div class="most-searched-routes-by-user-location">
         <br/>
         <h4 class="ui dividing header blue">Suggestions according to your location</h4>
@@ -165,5 +166,6 @@
             @endforeach
         @endif
     </div>
+    @endif
 </div>
 @endsection
